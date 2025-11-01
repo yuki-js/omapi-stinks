@@ -1,0 +1,85 @@
+name: Setup Copilot Agent Environment
+
+# This workflow sets up the environment for GitHub Copilot Agents
+# It pre-installs tools and dependencies to speed up agent execution
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  setup-environment:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Install Python dependencies for PDF processing
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install pypdf2 pdfplumber
+        
+    - name: Install additional build tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          wget \
+          curl \
+          git \
+          unzip \
+          build-essential
+          
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Warm up Gradle wrapper
+      run: |
+        chmod +x gradlew
+        ./gradlew --version
+        
+    - name: Pre-download dependencies
+      run: ./gradlew dependencies --configuration releaseRuntimeClasspath
+      continue-on-error: true
+      
+    - name: Verify environment
+      run: |
+        echo "Java version:"
+        java -version
+        echo ""
+        echo "Gradle version:"
+        ./gradlew --version
+        echo ""
+        echo "Android SDK:"
+        echo $ANDROID_HOME
+        echo ""
+        echo "Python packages:"
+        pip list | grep -i pdf
+        
+    - name: Create environment summary
+      run: |
+        echo "# Copilot Agent Environment" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ JDK 17 installed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Android SDK configured" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Gradle wrapper ready" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Python PDF libraries installed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Build dependencies cached" >> $GITHUB_STEP_SUMMARY
