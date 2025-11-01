@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OMAPI Sniff</string>
+    <string name="header_text">OMAPI Call Logs</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="no_logs">No OMAPI calls logged yet</string>
+</resources>
