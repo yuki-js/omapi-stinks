@@ -1,6 +1,10 @@
 package app.aoki.yuki.omapistinks;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,6 +23,8 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import app.aoki.yuki.omapistinks.hooks.LogDispatcher;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -31,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler;
     private Runnable refreshRunnable;
     private TextView statusText;
+    private BroadcastReceiver logReceiver;
     private static final int REFRESH_INTERVAL_MS = 1000;
     private static final int PERMISSION_REQUEST_CODE = 100;
 
@@ -58,6 +65,20 @@ public class MainActivity extends AppCompatActivity {
         
         // Update status
         updateStatus();
+
+        // Set up broadcast receiver for cross-process logs
+        logReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (LogDispatcher.BROADCAST_ACTION.equals(intent.getAction())) {
+                    String message = intent.getStringExtra(LogDispatcher.EXTRA_MESSAGE);
+                    if (message != null) {
+                        CallLogger.getInstance().addLog(message);
+                        refreshLogs();
+                    }
+                }
+            }
+        };
 
         handler = new Handler(Looper.getMainLooper());
         refreshRunnable = new Runnable() {
@@ -94,6 +115,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        
+        // Register broadcast receiver
+        IntentFilter filter = new IntentFilter(LogDispatcher.BROADCAST_ACTION);
+        registerReceiver(logReceiver, filter);
+        
         refreshLogs();
         handler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS);
     }
@@ -101,6 +127,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        
+        // Unregister broadcast receiver
+        try {
+            unregisterReceiver(logReceiver);
+        } catch (Exception e) {
+            // Ignore if not registered
+        }
+        
         handler.removeCallbacks(refreshRunnable);
     }
 
