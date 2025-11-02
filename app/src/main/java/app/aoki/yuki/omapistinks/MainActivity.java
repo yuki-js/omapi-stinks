@@ -192,10 +192,10 @@ public class MainActivity extends AppCompatActivity {
         for (CallLogger.CallLogEntry entry : logs) {
             // Apply search query filter
             if (!searchQuery.isEmpty()) {
-                String searchLower = searchQuery.toLowerCase();
-                boolean matches = entry.getMessage().toLowerCase().contains(searchLower) ||
-                                (entry.getPackageName() != null && entry.getPackageName().toLowerCase().contains(searchLower)) ||
-                                entry.getFunctionName().toLowerCase().contains(searchLower);
+                String searchLower = searchQuery.toLowerCase(java.util.Locale.ROOT);
+                boolean matches = entry.getMessage().toLowerCase(java.util.Locale.ROOT).contains(searchLower) ||
+                                (entry.getPackageName() != null && entry.getPackageName().toLowerCase(java.util.Locale.ROOT).contains(searchLower)) ||
+                                entry.getFunctionName().toLowerCase(java.util.Locale.ROOT).contains(searchLower);
                 if (!matches) continue;
             }
             
