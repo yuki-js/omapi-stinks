@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- LSPosed Scope: Suggested packages to hook -->
+    <string-array name="xposed_scope">
+        <!-- System Framework - Core OMAPI implementation -->
+        <item>android</item>
+        
+        <!-- System SE Service -->
+        <item>com.android.se</item>
+        
+        <!-- Google Services that may use OMAPI -->
+        <item>com.google.android.gms</item>
+        <item>com.google.android.gsf</item>
+        
+        <!-- Common payment apps -->
+        <item>com.google.android.apps.walletnfcrel</item>
+        <item>com.samsung.android.spay</item>
+        
+        <!-- SIM Toolkit -->
+        <item>com.android.stk</item>
+        
+        <!-- Add more apps as needed -->
+    </string-array>
+</resources>
