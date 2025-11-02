@@ -99,14 +99,18 @@ public class CallLogger {
             Pattern funcPattern = Pattern.compile("^(\\[SYSTEM\\]\\s+)?([a-zA-Z.]+)\\s*\\(");
             Matcher funcMatcher = funcPattern.matcher(msg);
             String func = "Unknown";
+            int detailStartIndex = 0;
+            
             if (funcMatcher.find()) {
                 func = funcMatcher.group(2);
+                detailStartIndex = funcMatcher.end() - 1;
             } else {
                 // Try to match "function() = result" pattern
                 Pattern resultPattern = Pattern.compile("^(\\[SYSTEM\\]\\s+)?([a-zA-Z.]+)\\s*\\(\\)");
                 Matcher resultMatcher = resultPattern.matcher(msg);
                 if (resultMatcher.find()) {
                     func = resultMatcher.group(2);
+                    detailStartIndex = resultMatcher.end();
                 }
             }
 
@@ -124,8 +128,8 @@ public class CallLogger {
 
             // Extract details (everything after function name)
             String detail = msg;
-            if (funcMatcher.find()) {
-                detail = msg.substring(funcMatcher.end() - 1);
+            if (detailStartIndex > 0 && detailStartIndex < msg.length()) {
+                detail = msg.substring(detailStartIndex);
             }
 
             return new ParsedInfo(func, detail, isTransmit, apdu);
@@ -235,6 +239,12 @@ public class CallLogger {
             if (command == null || command.length() < 8) {
                 return command;
             }
+            
+            // Validate even length (hex strings should have pairs of characters)
+            if (command.length() % 2 != 0) {
+                return command; // Return as-is if invalid
+            }
+            
             // Format as: CLA INS P1 P2 [Lc [Data]] [Le]
             StringBuilder sb = new StringBuilder();
             sb.append(command.substring(0, 2)).append(" "); // CLA
@@ -253,6 +263,12 @@ public class CallLogger {
             if (response == null || response.length() < 4) {
                 return response;
             }
+            
+            // Validate even length (hex strings should have pairs of characters)
+            if (response.length() % 2 != 0) {
+                return response; // Return as-is if invalid
+            }
+            
             // Format as: [Data] SW1 SW2
             int len = response.length();
             String sw1sw2 = response.substring(len - 4);
