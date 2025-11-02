@@ -1,6 +1,7 @@
-name: Setup Copilot Agent Environment
+name: GitHub Copilot Agent Environment
 
-# This workflow sets up the environment for GitHub Copilot Agents
+# This is the official Copilot agent environment setup workflow
+# GitHub Copilot recognizes this file by its name: copilot.yml
 # It pre-installs tools and dependencies to speed up agent execution
 
 on:
