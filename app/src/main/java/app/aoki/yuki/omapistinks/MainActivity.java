@@ -118,7 +118,13 @@ public class MainActivity extends AppCompatActivity {
         
         // Register broadcast receiver
         IntentFilter filter = new IntentFilter(LogDispatcher.BROADCAST_ACTION);
-        registerReceiver(logReceiver, filter);
+        
+        // Android 13+ (API 33+) requires explicit RECEIVER_NOT_EXPORTED flag
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(logReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(logReceiver, filter);
+        }
         
         refreshLogs();
         handler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS);
