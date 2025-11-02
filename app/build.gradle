@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.yukijs.omapisniff'
+    namespace 'app.aoki.yuki.omapistinks'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.yukijs.omapisniff"
+        applicationId "app.aoki.yuki.omapistinks"
         minSdk 28
         targetSdk 34
         versionCode 1
@@ -31,6 +31,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
     implementation 'androidx.recyclerview:recyclerview:1.3.1'
     compileOnly 'de.robv.android.xposed:api:82'
 }

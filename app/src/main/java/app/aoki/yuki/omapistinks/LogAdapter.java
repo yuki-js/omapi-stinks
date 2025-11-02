@@ -1,4 +1,4 @@
-package com.yukijs.omapisniff;
+package app.aoki.yuki.omapistinks;
 
 import android.view.LayoutInflater;
 import android.view.View;

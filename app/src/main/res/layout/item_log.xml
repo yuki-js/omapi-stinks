@@ -1,33 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:background="?attr/selectableItemBackground">
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardElevation="2dp"
+    app:cardCornerRadius="8dp"
+    app:contentPadding="12dp">
 
-    <TextView
-        android:id="@+id/timestampText"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:textColor="@android:color/darker_gray"
-        android:text="2024-01-01 12:00:00.000" />
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/messageText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:textColor="@android:color/black"
-        android:layout_marginTop="4dp"
-        android:fontFamily="monospace"
-        android:text="Log message" />
+        <TextView
+            android:id="@+id/timestampText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#757575"
+            android:text="2024-01-01 12:00:00.000" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="8dp"
-        android:background="@android:color/darker_gray" />
+        <TextView
+            android:id="@+id/messageText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="#212121"
+            android:layout_marginTop="4dp"
+            android:fontFamily="monospace"
+            android:text="Log message"
+            android:lineSpacingExtra="2dp" />
 
-</LinearLayout>
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

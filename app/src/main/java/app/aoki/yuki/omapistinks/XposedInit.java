@@ -1,4 +1,4 @@
-package com.yukijs.omapisniff;
+package app.aoki.yuki.omapistinks;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -11,7 +11,7 @@ import java.util.Arrays;
 
 public class XposedInit implements IXposedHookLoadPackage {
 
-    private static final String TAG = "OmapiSniff";
+    private static final String TAG = "OmapiStinks";
 
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {

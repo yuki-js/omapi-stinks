@@ -1,4 +1,4 @@
-package com.yukijs.omapisniff;
+package app.aoki.yuki.omapistinks;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
