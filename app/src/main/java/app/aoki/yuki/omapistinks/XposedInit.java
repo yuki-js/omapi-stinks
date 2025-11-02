@@ -237,13 +237,19 @@ public class XposedInit implements IXposedHookLoadPackage {
     
     private void sendBroadcast(String message) {
         try {
+            // Use explicit intent with ComponentName to ensure delivery
             Intent intent = new Intent(Constants.BROADCAST_ACTION);
+            intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".LogReceiver");
             intent.putExtra(Constants.EXTRA_MESSAGE, message);
             intent.putExtra(Constants.EXTRA_TIMESTAMP, dateFormat.format(new Date()));
-            intent.setPackage(Constants.PACKAGE_NAME);
+            
+            // Add FLAG_INCLUDE_STOPPED_PACKAGES to wake up the app if it's not running
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            
             appContext.sendBroadcast(intent);
         } catch (Throwable t) {
-            // Silently ignore if broadcast fails
+            // Log error for debugging
+            XposedBridge.log(TAG + ": Failed to send broadcast: " + t.getMessage());
         }
     }
     

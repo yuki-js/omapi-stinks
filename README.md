@@ -111,7 +111,24 @@ Pre-configured scope suggestions include:
 - `com.samsung.android.spay` (Samsung Pay)
 - `com.android.stk` (SIM Toolkit)
 
-## Troubleshooting
+## Verification & Troubleshooting
+
+### Verify Module is Working
+
+Use `adb logcat` to see real-time diagnostic logs:
+
+```bash
+# Terminal 1: Watch for hook activity
+adb logcat -s OmapiStinks:* OmapiStinks.LogReceiver:*
+
+# Terminal 2: Watch for broadcast delivery
+adb logcat | grep "LOG_ENTRY"
+```
+
+**What you should see:**
+- `OmapiStinks: Channel.transmit(command=...)` - Hook is firing
+- `LogReceiver: Received log: ...` - Broadcast is being received
+- `LogReceiver: Log stored successfully. Total logs: N` - Logs are stored
 
 ### No logs appearing?
 
@@ -120,18 +137,35 @@ Pre-configured scope suggestions include:
 3. Ensure **"com.android.se"** is in scope
 4. Reboot after enabling module
 5. Check module is enabled in LSPosed
+6. **Run logcat** to see if hooks are firing but broadcasts failing
 
 ### Logs in LSPosed but not in app?
 
-1. Check app is receiving broadcasts (should show "Module active")
-2. Try restarting the OMAPI Stinks app
-3. Check Android 13+ permissions (should work automatically)
+**This means hooks work but broadcast delivery failed.**
+
+Debug steps:
+```bash
+# Check if LogReceiver is registered
+adb shell dumpsys package app.aoki.yuki.omapistinks | grep -A 5 "Receiver"
+
+# Test broadcast manually
+adb shell am broadcast -a app.aoki.yuki.omapistinks.LOG_ENTRY \
+  --es message "Test message" \
+  --es timestamp "2024-01-01 00:00:00.000" \
+  -n app.aoki.yuki.omapistinks/.LogReceiver
+```
+
+If manual broadcast works, check:
+1. Target app is using OMAPI (try Google Pay tap)
+2. Hook is in correct process (check `adb logcat`)
+3. Broadcast permission issues (shouldn't happen with `exported=true`)
 
 ### App crashes?
 
 1. Clear app data and reinstall
 2. Check LSPosed logs for errors
 3. Ensure you're using LSPosed (not EdXposed)
+4. Check logcat for Java exceptions
 
 ## Technical Details
 
