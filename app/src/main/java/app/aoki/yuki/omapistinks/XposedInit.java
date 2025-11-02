@@ -1,64 +1,276 @@
 package app.aoki.yuki.omapistinks;
 
-import app.aoki.yuki.omapistinks.hooks.ClientOmapiHooks;
-import app.aoki.yuki.omapistinks.hooks.LogDispatcher;
-import app.aoki.yuki.omapistinks.hooks.SystemOmapiHooks;
+import android.content.Context;
+import android.content.Intent;
+
 import de.robv.android.xposed.IXposedHookLoadPackage;
-import de.robv.android.xposed.IXposedHookZygoteInit;
+import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
+import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 /**
- * Main Xposed initialization class for OMAPI Stinks
- * This class is kept minimal and delegates to specialized hook classes
+ * Xposed Module for hooking OMAPI calls
+ * Sends all logs via broadcast to the UI app
  */
-public class XposedInit implements IXposedHookLoadPackage, IXposedHookZygoteInit {
+public class XposedInit implements IXposedHookLoadPackage {
 
     private static final String TAG = "OmapiStinks";
-
-    @Override
-    public void initZygote(StartupParam startupParam) throws Throwable {
-        // Initialize file logging early in the zygote
-        XposedBridge.log(TAG + ": Module loaded in zygote");
-        LogDispatcher zygoteDispatcher = new LogDispatcher("zygote");
-        zygoteDispatcher.dispatchLog("=== OMAPI Stinks Module Loaded in Zygote ===");
-    }
+    public static final String BROADCAST_ACTION = "app.aoki.yuki.omapistinks.LOG_ENTRY";
+    public static final String EXTRA_MESSAGE = "message";
+    public static final String EXTRA_TIMESTAMP = "timestamp";
+    
+    private SimpleDateFormat dateFormat;
+    private Context appContext;
 
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
-        String packageName = lpparam.packageName;
-        String processName = lpparam.processName;
+        dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
         
-        // Create log dispatcher for this process
-        LogDispatcher logDispatcher = new LogDispatcher(processName);
-        logDispatcher.dispatchLog("=== Package Loaded: " + packageName + " (process: " + processName + ") ===");
-        XposedBridge.log(TAG + ": Loaded into package: " + packageName + " (process: " + processName + ")");
-        
-        boolean hooked = false;
-        
-        // Hook client-side OMAPI packages
-        ClientOmapiHooks clientHooks = new ClientOmapiHooks(logDispatcher);
-        hooked |= clientHooks.hookPackage(lpparam, "org.simalliance.openmobileapi");
-        hooked |= clientHooks.hookPackage(lpparam, "android.se.omapi");
-        
-        // Hook system SecureElement service (com.android.se)
-        if ("com.android.se".equals(packageName) || processName.contains("com.android.se")) {
-            logDispatcher.dispatchLog("*** Detected SecureElement Service process ***");
-            XposedBridge.log(TAG + ": Hooking SecureElement Service");
-            SystemOmapiHooks systemHooks = new SystemOmapiHooks(logDispatcher);
-            hooked |= systemHooks.hookSecureElementService(lpparam);
+        // Try to get application context for sending broadcasts
+        try {
+            XposedHelpers.findAndHookMethod("android.app.Application", lpparam.classLoader,
+                    "attach", Context.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    appContext = (Context) param.args[0];
+                }
+            });
+        } catch (Throwable t) {
+            // Context hook failed, will use XposedBridge logging only
         }
         
-        // Hook system_server for SE management
-        if ("android".equals(packageName) && "system_server".equals(processName)) {
-            logDispatcher.dispatchLog("*** Detected system_server process ***");
-            XposedBridge.log(TAG + ": In system_server process");
-            // Additional system hooks can be added here if needed
+        // Hook client-side OMAPI (apps using OMAPI)
+        if (lpparam.packageName.equals("android") || isOmapiPackage(lpparam.packageName)) {
+            hookClientOmapi(lpparam);
         }
         
-        if (hooked) {
-            logDispatcher.dispatchLog("Successfully hooked OMAPI in " + packageName);
-            XposedBridge.log(TAG + ": Successfully hooked OMAPI in " + packageName);
+        // Hook system SecureElement service
+        if (lpparam.packageName.equals("com.android.se")) {
+            hookSystemService(lpparam);
         }
+    }
+    
+    private boolean isOmapiPackage(String packageName) {
+        // Add common packages that use OMAPI
+        return packageName.contains("wallet") || 
+               packageName.contains("pay") || 
+               packageName.contains("nfc") ||
+               packageName.equals("com.google.android.gms") ||
+               packageName.equals("com.google.android.apps.walletnfcrel") ||
+               packageName.equals("com.samsung.android.spay") ||
+               packageName.equals("com.android.stk");
+    }
+    
+    private void hookClientOmapi(LoadPackageParam lpparam) {
+        // Hook modern android.se.omapi package
+        hookOmapiPackage(lpparam, "android.se.omapi");
+        
+        // Hook legacy org.simalliance.openmobileapi package
+        hookOmapiPackage(lpparam, "org.simalliance.openmobileapi");
+    }
+    
+    private void hookOmapiPackage(LoadPackageParam lpparam, String packagePrefix) {
+        try {
+            // Hook SEService
+            hookClass(lpparam, packagePrefix + ".SEService", "getReaders", "SEService.getReaders()");
+            hookClass(lpparam, packagePrefix + ".SEService", "isConnected", "SEService.isConnected()");
+            hookClass(lpparam, packagePrefix + ".SEService", "shutdown", "SEService.shutdown()");
+            
+            // Hook Reader
+            hookClass(lpparam, packagePrefix + ".Reader", "getName", "Reader.getName()");
+            hookClass(lpparam, packagePrefix + ".Reader", "isSecureElementPresent", "Reader.isSecureElementPresent()");
+            hookClass(lpparam, packagePrefix + ".Reader", "openSession", "Reader.openSession()");
+            hookClass(lpparam, packagePrefix + ".Reader", "closeSessions", "Reader.closeSessions()");
+            
+            // Hook Session
+            hookClass(lpparam, packagePrefix + ".Session", "getATR", "Session.getATR()");
+            hookClass(lpparam, packagePrefix + ".Session", "close", "Session.close()");
+            hookClass(lpparam, packagePrefix + ".Session", "isClosed", "Session.isClosed()");
+            hookClass(lpparam, packagePrefix + ".Session", "closeChannels", "Session.closeChannels()");
+            
+            // Hook Session openBasicChannel
+            hookClassWithByteArray(lpparam, packagePrefix + ".Session", "openBasicChannel", "Session.openBasicChannel");
+            
+            // Hook Session openLogicalChannel
+            hookClassWithByteArray(lpparam, packagePrefix + ".Session", "openLogicalChannel", "Session.openLogicalChannel");
+            
+            // Hook Channel - most important for APDU capture
+            hookClass(lpparam, packagePrefix + ".Channel", "close", "Channel.close()");
+            hookClass(lpparam, packagePrefix + ".Channel", "isBasicChannel", "Channel.isBasicChannel()");
+            hookClass(lpparam, packagePrefix + ".Channel", "isClosed", "Channel.isClosed()");
+            hookClass(lpparam, packagePrefix + ".Channel", "getSelectResponse", "Channel.getSelectResponse()");
+            
+            // Hook Channel.transmit - captures all APDU commands and responses
+            hookChannelTransmit(lpparam, packagePrefix + ".Channel");
+            
+            logMessage("Hooked " + packagePrefix + " in " + lpparam.packageName);
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": Could not hook " + packagePrefix + ": " + t.getMessage());
+        }
+    }
+    
+    private void hookSystemService(LoadPackageParam lpparam) {
+        try {
+            // Hook com.android.se.Terminal.transmit() - ALL APDUs pass through here
+            Class<?> terminalClass = XposedHelpers.findClass("com.android.se.Terminal", lpparam.classLoader);
+            XposedHelpers.findAndHookMethod(terminalClass, "transmit", byte[].class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    byte[] command = (byte[]) param.args[0];
+                    String commandHex = bytesToHex(command);
+                    logMessage("[SYSTEM] Terminal.transmit(command=" + commandHex + ")");
+                }
+                
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    byte[] response = (byte[]) param.getResult();
+                    if (response != null) {
+                        String responseHex = bytesToHex(response);
+                        logMessage("[SYSTEM] Terminal.transmit() returned " + responseHex);
+                    }
+                }
+            });
+            
+            logMessage("Hooked com.android.se.Terminal in system service");
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": Could not hook system service: " + t.getMessage());
+        }
+    }
+    
+    private void hookClass(LoadPackageParam lpparam, String className, String methodName, String logPrefix) {
+        try {
+            Class<?> clazz = XposedHelpers.findClass(className, lpparam.classLoader);
+            XposedHelpers.findAndHookMethod(clazz, methodName, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    Object result = param.getResult();
+                    String resultStr = formatResult(result);
+                    logMessage(logPrefix + " = " + resultStr);
+                }
+            });
+        } catch (Throwable t) {
+            // Method might not exist in this version, silently ignore
+        }
+    }
+    
+    private void hookClassWithByteArray(LoadPackageParam lpparam, String className, String methodName, String logPrefix) {
+        try {
+            Class<?> clazz = XposedHelpers.findClass(className, lpparam.classLoader);
+            
+            // Hook version with byte[] aid
+            XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    byte[] aid = (byte[]) param.args[0];
+                    String aidHex = bytesToHex(aid);
+                    logMessage(logPrefix + "(aid=" + aidHex + ")");
+                }
+                
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    Object channel = param.getResult();
+                    logMessage(logPrefix + "() returned " + channel);
+                }
+            });
+            
+            // Hook version with byte[] aid and byte P2
+            XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, byte.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    byte[] aid = (byte[]) param.args[0];
+                    byte p2 = (byte) param.args[1];
+                    String aidHex = bytesToHex(aid);
+                    logMessage(logPrefix + "(aid=" + aidHex + ", P2=0x" + String.format("%02X", p2) + ")");
+                }
+                
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    Object channel = param.getResult();
+                    logMessage(logPrefix + "() returned " + channel);
+                }
+            });
+        } catch (Throwable t) {
+            // Method might not exist, ignore
+        }
+    }
+    
+    private void hookChannelTransmit(LoadPackageParam lpparam, String className) {
+        try {
+            Class<?> clazz = XposedHelpers.findClass(className, lpparam.classLoader);
+            XposedHelpers.findAndHookMethod(clazz, "transmit", byte[].class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    byte[] command = (byte[]) param.args[0];
+                    String commandHex = bytesToHex(command);
+                    logMessage("Channel.transmit(command=" + commandHex + ")");
+                }
+                
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    byte[] response = (byte[]) param.getResult();
+                    if (response != null) {
+                        String responseHex = bytesToHex(response);
+                        logMessage("Channel.transmit() returned " + responseHex);
+                    }
+                }
+            });
+        } catch (Throwable t) {
+            // Method might not exist, ignore
+        }
+    }
+    
+    private void logMessage(String message) {
+        try {
+            // Always log to Xposed framework log
+            XposedBridge.log(TAG + ": " + message);
+            
+            // Try to send broadcast to UI app if context is available
+            if (appContext != null) {
+                sendBroadcast(message);
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": Error logging: " + t.getMessage());
+        }
+    }
+    
+    private void sendBroadcast(String message) {
+        try {
+            Intent intent = new Intent(BROADCAST_ACTION);
+            intent.putExtra(EXTRA_MESSAGE, message);
+            intent.putExtra(EXTRA_TIMESTAMP, dateFormat.format(new Date()));
+            intent.setPackage("app.aoki.yuki.omapistinks");
+            appContext.sendBroadcast(intent);
+        } catch (Throwable t) {
+            // Silently ignore if broadcast fails
+        }
+    }
+    
+    private String formatResult(Object result) {
+        if (result == null) {
+            return "null";
+        } else if (result instanceof byte[]) {
+            return bytesToHex((byte[]) result);
+        } else if (result instanceof Object[]) {
+            Object[] arr = (Object[]) result;
+            return arr.length + " items";
+        } else {
+            return result.toString();
+        }
+    }
+    
+    private String bytesToHex(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
     }
 }
