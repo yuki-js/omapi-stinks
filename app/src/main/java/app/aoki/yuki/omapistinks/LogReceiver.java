@@ -20,16 +20,16 @@ public class LogReceiver extends BroadcastReceiver {
             
             if (Constants.BROADCAST_ACTION.equals(intent.getAction())) {
                 String message = intent.getStringExtra(Constants.EXTRA_MESSAGE);
-                String timestamp = intent.getStringExtra(Constants.EXTRA_TIMESTAMP);
+                String packageName = intent.getStringExtra(Constants.EXTRA_PACKAGE);
                 
-                Log.d(TAG, "Received log: " + message);
+                Log.d(TAG, "Received log from " + packageName + ": " + message);
                 
-                if (message != null && timestamp != null) {
+                if (message != null) {
                     // Store in CallLogger (singleton, persists in memory)
-                    CallLogger.getInstance().addLog(timestamp + " | " + message);
+                    CallLogger.getInstance().addLog(message, packageName);
                     Log.d(TAG, "Log stored successfully. Total logs: " + CallLogger.getInstance().getLogs().size());
                 } else {
-                    Log.w(TAG, "Message or timestamp is null");
+                    Log.w(TAG, "Message is null");
                 }
             }
         } catch (Exception e) {

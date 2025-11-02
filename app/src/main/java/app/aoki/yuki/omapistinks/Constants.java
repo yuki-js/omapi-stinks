@@ -11,6 +11,7 @@ public class Constants {
     // Intent extras for log data
     public static final String EXTRA_MESSAGE = "message";
     public static final String EXTRA_TIMESTAMP = "timestamp";
+    public static final String EXTRA_PACKAGE = "packageName";
     
     // Package name for intent targeting
     public static final String PACKAGE_NAME = "app.aoki.yuki.omapistinks";

@@ -3,6 +3,7 @@ package app.aoki.yuki.omapistinks;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -35,8 +36,48 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull LogViewHolder holder, int position) {
         CallLogger.CallLogEntry entry = logs.get(position);
-        holder.timestampText.setText(entry.getTimestamp());
-        holder.messageText.setText(entry.getMessage());
+        
+        // Set timestamp (short format)
+        holder.timestampText.setText(entry.getShortTimestamp());
+        
+        // Set package name
+        String packageName = entry.getPackageName();
+        if (packageName != null && !packageName.isEmpty()) {
+            holder.packageText.setText(packageName);
+            holder.packageText.setVisibility(View.VISIBLE);
+        } else {
+            holder.packageText.setVisibility(View.GONE);
+        }
+        
+        // Set function name
+        holder.functionText.setText(entry.getFunctionName());
+        
+        // Set details
+        holder.detailsText.setText(entry.getDetails());
+        
+        // Handle APDU display for transmit calls
+        if (entry.isTransmit() && entry.getApduInfo() != null) {
+            CallLogger.ApduInfo apdu = entry.getApduInfo();
+            
+            // Show command if available
+            if (apdu.getCommand() != null) {
+                holder.apduCommandLayout.setVisibility(View.VISIBLE);
+                holder.apduCommandText.setText(apdu.getFormattedCommand());
+            } else {
+                holder.apduCommandLayout.setVisibility(View.GONE);
+            }
+            
+            // Show response if available
+            if (apdu.getResponse() != null) {
+                holder.apduResponseLayout.setVisibility(View.VISIBLE);
+                holder.apduResponseText.setText(apdu.getFormattedResponse());
+            } else {
+                holder.apduResponseLayout.setVisibility(View.GONE);
+            }
+        } else {
+            holder.apduCommandLayout.setVisibility(View.GONE);
+            holder.apduResponseLayout.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -46,12 +87,24 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
 
     static class LogViewHolder extends RecyclerView.ViewHolder {
         TextView timestampText;
-        TextView messageText;
+        TextView packageText;
+        TextView functionText;
+        TextView detailsText;
+        LinearLayout apduCommandLayout;
+        TextView apduCommandText;
+        LinearLayout apduResponseLayout;
+        TextView apduResponseText;
 
         LogViewHolder(@NonNull View itemView) {
             super(itemView);
             timestampText = itemView.findViewById(R.id.timestampText);
-            messageText = itemView.findViewById(R.id.messageText);
+            packageText = itemView.findViewById(R.id.packageText);
+            functionText = itemView.findViewById(R.id.functionText);
+            detailsText = itemView.findViewById(R.id.detailsText);
+            apduCommandLayout = itemView.findViewById(R.id.apduCommandLayout);
+            apduCommandText = itemView.findViewById(R.id.apduCommandText);
+            apduResponseLayout = itemView.findViewById(R.id.apduResponseLayout);
+            apduResponseText = itemView.findViewById(R.id.apduResponseText);
         }
     }
 }

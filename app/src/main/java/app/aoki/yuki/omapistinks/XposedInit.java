@@ -23,10 +23,12 @@ public class XposedInit implements IXposedHookLoadPackage {
     
     private SimpleDateFormat dateFormat;
     private Context appContext;
+    private String currentPackageName;
 
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
         dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
+        currentPackageName = lpparam.packageName;
         
         // Try to get application context for sending broadcasts
         try {
@@ -242,6 +244,7 @@ public class XposedInit implements IXposedHookLoadPackage {
             intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".LogReceiver");
             intent.putExtra(Constants.EXTRA_MESSAGE, message);
             intent.putExtra(Constants.EXTRA_TIMESTAMP, dateFormat.format(new Date()));
+            intent.putExtra(Constants.EXTRA_PACKAGE, currentPackageName);
             
             // Add FLAG_INCLUDE_STOPPED_PACKAGES to wake up the app if it's not running
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
