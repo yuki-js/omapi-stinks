@@ -28,7 +28,6 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler;
     private Runnable refreshRunnable;
     private TextView statusText;
-    private BroadcastReceiver logReceiver;
     private static final int REFRESH_INTERVAL_MS = 1000;
     private int logCount = 0;
 
@@ -54,25 +53,11 @@ public class MainActivity extends AppCompatActivity {
         // Update status
         updateStatus();
 
-        // Set up broadcast receiver for cross-process logs
-        logReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (XposedInit.BROADCAST_ACTION.equals(intent.getAction())) {
-                    String message = intent.getStringExtra(XposedInit.EXTRA_MESSAGE);
-                    if (message != null) {
-                        CallLogger.getInstance().addLog(message);
-                        logCount++;
-                        refreshLogs();
-                    }
-                }
-            }
-        };
-
         handler = new Handler(Looper.getMainLooper());
         refreshRunnable = new Runnable() {
             @Override
             public void run() {
+                refreshLogs();
                 updateStatus();
                 handler.postDelayed(this, REFRESH_INTERVAL_MS);
             }
@@ -92,16 +77,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         
-        // Register broadcast receiver
-        IntentFilter filter = new IntentFilter(XposedInit.BROADCAST_ACTION);
-        
-        // Android 13+ (API 33+) requires explicit RECEIVER_NOT_EXPORTED flag
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(logReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(logReceiver, filter);
-        }
-        
+        // Load existing logs (captured by manifest receiver)
         refreshLogs();
         handler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS);
     }
@@ -109,13 +85,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        
-        // Unregister broadcast receiver
-        try {
-            unregisterReceiver(logReceiver);
-        } catch (Exception e) {
-            // Ignore if not registered
-        }
         
         handler.removeCallbacks(refreshRunnable);
     }

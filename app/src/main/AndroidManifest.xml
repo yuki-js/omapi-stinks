@@ -20,6 +20,15 @@
             </intent-filter>
         </activity>
 
+        <!-- Persistent BroadcastReceiver - captures logs even when app is closed -->
+        <receiver
+            android:name=".LogReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="app.aoki.yuki.omapistinks.LOG_ENTRY" />
+            </intent-filter>
+        </receiver>
+
         <!-- Xposed Module Metadata -->
         <meta-data
             android:name="xposedmodule"

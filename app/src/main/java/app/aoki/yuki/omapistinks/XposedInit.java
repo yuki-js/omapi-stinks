@@ -20,9 +20,6 @@ import java.util.Locale;
 public class XposedInit implements IXposedHookLoadPackage {
 
     private static final String TAG = "OmapiStinks";
-    public static final String BROADCAST_ACTION = "app.aoki.yuki.omapistinks.LOG_ENTRY";
-    public static final String EXTRA_MESSAGE = "message";
-    public static final String EXTRA_TIMESTAMP = "timestamp";
     
     private SimpleDateFormat dateFormat;
     private Context appContext;
@@ -240,10 +237,10 @@ public class XposedInit implements IXposedHookLoadPackage {
     
     private void sendBroadcast(String message) {
         try {
-            Intent intent = new Intent(BROADCAST_ACTION);
-            intent.putExtra(EXTRA_MESSAGE, message);
-            intent.putExtra(EXTRA_TIMESTAMP, dateFormat.format(new Date()));
-            intent.setPackage("app.aoki.yuki.omapistinks");
+            Intent intent = new Intent(Constants.BROADCAST_ACTION);
+            intent.putExtra(Constants.EXTRA_MESSAGE, message);
+            intent.putExtra(Constants.EXTRA_TIMESTAMP, dateFormat.format(new Date()));
+            intent.setPackage(Constants.PACKAGE_NAME);
             appContext.sendBroadcast(intent);
         } catch (Throwable t) {
             // Silently ignore if broadcast fails
