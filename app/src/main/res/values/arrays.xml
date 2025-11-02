@@ -19,6 +19,13 @@
         <!-- SIM Toolkit -->
         <item>com.android.stk</item>
         
+        <!-- Felica-related packages (Japanese mobile payment/transit apps) -->
+        <item>com.felicanetworks.mfm.main</item>
+        <item>com.felicanetworks.mfc</item>
+        <item>com.felicanetworks.mfw.a.main</item>
+        <item>com.felicanetworks.mfw.a.boot</item>
+        <item>com.felicanetworks.mfs</item>
+        
         <!-- Add more apps as needed -->
     </string-array>
 </resources>

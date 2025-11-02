@@ -110,6 +110,11 @@ Pre-configured scope suggestions include:
 - `com.google.android.apps.walletnfcrel` (Google Wallet)
 - `com.samsung.android.spay` (Samsung Pay)
 - `com.android.stk` (SIM Toolkit)
+- `com.felicanetworks.mfm.main` (おサイフケータイ - Osaifu-Keitai)
+- `com.felicanetworks.mfc` (Mobile Felica Client)
+- `com.felicanetworks.mfw.a.main` (Mobile Felica Web Plugin)
+- `com.felicanetworks.mfw.a.boot` (Mobile Felica Web Boot)
+- `com.felicanetworks.mfs` (Mobile Felica Service)
 
 ## Verification & Troubleshooting
 
