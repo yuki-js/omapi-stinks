@@ -1,4 +1,8 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.xposed;
+
+import app.aoki.yuki.omapistinks.core.ApduInfo;
+import app.aoki.yuki.omapistinks.core.CallLogEntry;
+import app.aoki.yuki.omapistinks.core.Constants;
 
 import android.content.Context;
 import android.content.Intent;

@@ -1,4 +1,9 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.ui;
+
+import app.aoki.yuki.omapistinks.core.CallLogEntry;
+import app.aoki.yuki.omapistinks.core.CallLogger;
+import app.aoki.yuki.omapistinks.core.Constants;
+import app.aoki.yuki.omapistinks.R;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

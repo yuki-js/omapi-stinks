@@ -1,12 +1,12 @@
-package app.aoki.yuki.omapistinks.hooks;
+package app.aoki.yuki.omapistinks.xposed.hooks;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
-import app.aoki.yuki.omapistinks.CallLogEntry;
-import app.aoki.yuki.omapistinks.Constants;
-import app.aoki.yuki.omapistinks.LogBroadcaster;
+import app.aoki.yuki.omapistinks.core.CallLogEntry;
+import app.aoki.yuki.omapistinks.core.Constants;
+import app.aoki.yuki.omapistinks.xposed.LogBroadcaster;
 
 /**
  * Hooks Session.openBasicChannel() and Session.openLogicalChannel() methods

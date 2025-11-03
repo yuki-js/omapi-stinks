@@ -1,4 +1,4 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.core;
 
 /**
  * Shared constants used across the app and Xposed module

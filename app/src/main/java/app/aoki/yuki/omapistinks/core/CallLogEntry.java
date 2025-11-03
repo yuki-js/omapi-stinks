@@ -1,4 +1,4 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.core;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

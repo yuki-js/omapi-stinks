@@ -1,4 +1,4 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.core;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

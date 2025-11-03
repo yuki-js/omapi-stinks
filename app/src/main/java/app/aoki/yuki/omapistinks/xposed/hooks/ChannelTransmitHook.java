@@ -1,22 +1,22 @@
-package app.aoki.yuki.omapistinks.hooks;
+package app.aoki.yuki.omapistinks.xposed.hooks;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
-import app.aoki.yuki.omapistinks.CallLogEntry;
-import app.aoki.yuki.omapistinks.Constants;
-import app.aoki.yuki.omapistinks.LogBroadcaster;
+import app.aoki.yuki.omapistinks.core.CallLogEntry;
+import app.aoki.yuki.omapistinks.core.Constants;
+import app.aoki.yuki.omapistinks.xposed.LogBroadcaster;
 
 /**
- * Hooks com.android.se.Terminal.transmit() for system-level APDU monitoring
+ * Hooks Channel.transmit() method to capture APDU command and response
  */
-public class TerminalTransmitHook {
+public class ChannelTransmitHook {
     
-    public static void hook(LoadPackageParam lpparam, LogBroadcaster broadcaster) {
+    public static void hook(LoadPackageParam lpparam, String className, LogBroadcaster broadcaster) {
         try {
-            Class<?> terminalClass = XposedHelpers.findClass("com.android.se.Terminal", lpparam.classLoader);
-            XposedHelpers.findAndHookMethod(terminalClass, "transmit", byte[].class, new XC_MethodHook() {
+            Class<?> clazz = XposedHelpers.findClass(className, lpparam.classLoader);
+            XposedHelpers.findAndHookMethod(clazz, "transmit", byte[].class, new XC_MethodHook() {
                 private String commandHex;
                 private long startTime;
                 
@@ -37,7 +37,7 @@ public class TerminalTransmitHook {
                         // Create structured log entry using factory method
                         CallLogEntry entry = CallLogEntry.createTransmitEntry(
                             lpparam.packageName,
-                            "[SYSTEM] Terminal.transmit",
+                            "Channel.transmit",
                             commandHex,
                             responseHex,
                             executionTime
@@ -48,7 +48,7 @@ public class TerminalTransmitHook {
                         // Log error if something went wrong
                         CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
                             lpparam.packageName,
-                            "[SYSTEM] Terminal.transmit",
+                            "Channel.transmit",
                             Constants.TYPE_TRANSMIT,
                             "Error logging transmit: " + t.getMessage()
                         );
@@ -57,7 +57,7 @@ public class TerminalTransmitHook {
                 }
             });
         } catch (Throwable t) {
-            // Terminal class might not exist
+            // Method might not exist in this package
         }
     }
 }

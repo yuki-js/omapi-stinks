@@ -1,4 +1,4 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.xposed;
 
 import android.content.Context;
 
@@ -7,9 +7,11 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
-import app.aoki.yuki.omapistinks.hooks.ChannelTransmitHook;
-import app.aoki.yuki.omapistinks.hooks.SessionOpenChannelHook;
-import app.aoki.yuki.omapistinks.hooks.TerminalTransmitHook;
+import app.aoki.yuki.omapistinks.core.CallLogEntry;
+import app.aoki.yuki.omapistinks.core.Constants;
+import app.aoki.yuki.omapistinks.xposed.hooks.ChannelTransmitHook;
+import app.aoki.yuki.omapistinks.xposed.hooks.SessionOpenChannelHook;
+import app.aoki.yuki.omapistinks.xposed.hooks.TerminalTransmitHook;
 
 /**
  * Xposed Module entry point for hooking OMAPI calls
