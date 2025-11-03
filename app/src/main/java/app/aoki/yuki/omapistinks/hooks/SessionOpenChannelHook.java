@@ -36,38 +36,34 @@ public class SessionOpenChannelHook {
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    long executionTime = System.currentTimeMillis() - startTime;
-                    byte[] aid = (byte[]) param.args[0];
-                    String aidHex = LogBroadcaster.bytesToHex(aid);
-                    Object channel = param.getResult();
-                    
-                    // Get select response from channel
-                    String selectResponse = extractSelectResponse(channel);
-                    
-                    // Get thread information
-                    Thread currentThread = Thread.currentThread();
-                    long threadId = currentThread.getId();
-                    String threadName = currentThread.getName();
-                    int processId = android.os.Process.myPid();
-                    
-                    CallLogEntry entry = new CallLogEntry(
-                        broadcaster.createTimestamp(),
-                        broadcaster.createShortTimestamp(),
-                        lpparam.packageName,
-                        "Session." + methodName,
-                        Constants.TYPE_OPEN_CHANNEL,
-                        null, // no APDU command for open channel
-                        null, // no APDU response for open channel
-                        aidHex,
-                        selectResponse,
-                        null, // no additional details
-                        threadId,
-                        threadName,
-                        processId,
-                        executionTime
-                    );
-                    
-                    broadcaster.logMessage(entry);
+                    try {
+                        long executionTime = System.currentTimeMillis() - startTime;
+                        byte[] aid = (byte[]) param.args[0];
+                        String aidHex = LogBroadcaster.bytesToHex(aid);
+                        Object channel = param.getResult();
+                        
+                        // Get select response from channel
+                        String selectResponse = extractSelectResponse(channel);
+                        
+                        CallLogEntry entry = CallLogEntry.createOpenChannelEntry(
+                            lpparam.packageName,
+                            "Session." + methodName,
+                            aidHex,
+                            selectResponse,
+                            executionTime
+                        );
+                        
+                        broadcaster.logMessage(entry);
+                    } catch (Throwable t) {
+                        // Log error if something went wrong
+                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                            lpparam.packageName,
+                            "Session." + methodName,
+                            Constants.TYPE_OPEN_CHANNEL,
+                            "Error logging open channel: " + t.getMessage()
+                        );
+                        broadcaster.logMessage(errorEntry);
+                    }
                 }
             });
             
@@ -82,39 +78,35 @@ public class SessionOpenChannelHook {
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    long executionTime = System.currentTimeMillis() - startTime;
-                    byte[] aid = (byte[]) param.args[0];
-                    byte p2 = (byte) param.args[1];
-                    String aidHex = LogBroadcaster.bytesToHex(aid);
-                    Object channel = param.getResult();
-                    
-                    // Get select response from channel
-                    String selectResponse = extractSelectResponse(channel);
-                    
-                    // Get thread information
-                    Thread currentThread = Thread.currentThread();
-                    long threadId = currentThread.getId();
-                    String threadName = currentThread.getName();
-                    int processId = android.os.Process.myPid();
-                    
-                    CallLogEntry entry = new CallLogEntry(
-                        broadcaster.createTimestamp(),
-                        broadcaster.createShortTimestamp(),
-                        lpparam.packageName,
-                        "Session." + methodName + "(P2=0x" + String.format("%02X", p2) + ")",
-                        Constants.TYPE_OPEN_CHANNEL,
-                        null, // no APDU command for open channel
-                        null, // no APDU response for open channel
-                        aidHex,
-                        selectResponse,
-                        null, // no additional details
-                        threadId,
-                        threadName,
-                        processId,
-                        executionTime
-                    );
-                    
-                    broadcaster.logMessage(entry);
+                    try {
+                        long executionTime = System.currentTimeMillis() - startTime;
+                        byte[] aid = (byte[]) param.args[0];
+                        byte p2 = (byte) param.args[1];
+                        String aidHex = LogBroadcaster.bytesToHex(aid);
+                        Object channel = param.getResult();
+                        
+                        // Get select response from channel
+                        String selectResponse = extractSelectResponse(channel);
+                        
+                        CallLogEntry entry = CallLogEntry.createOpenChannelEntry(
+                            lpparam.packageName,
+                            "Session." + methodName + "(P2=0x" + String.format("%02X", p2) + ")",
+                            aidHex,
+                            selectResponse,
+                            executionTime
+                        );
+                        
+                        broadcaster.logMessage(entry);
+                    } catch (Throwable t) {
+                        // Log error if something went wrong
+                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                            lpparam.packageName,
+                            "Session." + methodName,
+                            Constants.TYPE_OPEN_CHANNEL,
+                            "Error logging open channel: " + t.getMessage()
+                        );
+                        broadcaster.logMessage(errorEntry);
+                    }
                 }
             });
         } catch (Throwable t) {

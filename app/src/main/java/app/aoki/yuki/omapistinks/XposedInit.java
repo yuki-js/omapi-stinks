@@ -44,9 +44,30 @@ public class XposedInit implements IXposedHookLoadPackage {
                     "attach", Context.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    appContext = (Context) param.args[0];
-                    // Update broadcaster with context
-                    broadcaster = new LogBroadcaster(appContext, lpparam.packageName);
+                    try {
+                        appContext = (Context) param.args[0];
+                        // Update broadcaster with context
+                        broadcaster = new LogBroadcaster(appContext, lpparam.packageName);
+                        
+                        // Log the hook notification
+                        CallLogEntry hookEntry = CallLogEntry.createHookEntry(
+                            lpparam.packageName,
+                            "Application.attach",
+                            "OMAPI hooks installed for package: " + lpparam.packageName
+                        );
+                        broadcaster.logMessage(hookEntry);
+                    } catch (Throwable t) {
+                        // Log error if something went wrong in the hook
+                        if (broadcaster != null) {
+                            CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                                lpparam.packageName,
+                                "Application.attach",
+                                Constants.TYPE_OTHER,
+                                "Error in attach hook: " + t.getMessage()
+                            );
+                            broadcaster.logMessage(errorEntry);
+                        }
+                    }
                 }
             });
         } catch (Throwable t) {

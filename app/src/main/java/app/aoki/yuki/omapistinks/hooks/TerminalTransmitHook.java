@@ -29,35 +29,31 @@ public class TerminalTransmitHook {
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    long executionTime = System.currentTimeMillis() - startTime;
-                    byte[] response = (byte[]) param.getResult();
-                    String responseHex = response != null ? LogBroadcaster.bytesToHex(response) : null;
-                    
-                    // Get thread information
-                    Thread currentThread = Thread.currentThread();
-                    long threadId = currentThread.getId();
-                    String threadName = currentThread.getName();
-                    int processId = android.os.Process.myPid();
-                    
-                    // Create structured log entry
-                    CallLogEntry entry = new CallLogEntry(
-                        broadcaster.createTimestamp(),
-                        broadcaster.createShortTimestamp(),
-                        lpparam.packageName,
-                        "[SYSTEM] Terminal.transmit",
-                        Constants.TYPE_TRANSMIT,
-                        commandHex,
-                        responseHex,
-                        null, // no AID for transmit
-                        null, // no select response for transmit
-                        null, // no details for transmit
-                        threadId,
-                        threadName,
-                        processId,
-                        executionTime
-                    );
-                    
-                    broadcaster.logMessage(entry);
+                    try {
+                        long executionTime = System.currentTimeMillis() - startTime;
+                        byte[] response = (byte[]) param.getResult();
+                        String responseHex = response != null ? LogBroadcaster.bytesToHex(response) : null;
+                        
+                        // Create structured log entry using factory method
+                        CallLogEntry entry = CallLogEntry.createTransmitEntry(
+                            lpparam.packageName,
+                            "[SYSTEM] Terminal.transmit",
+                            commandHex,
+                            responseHex,
+                            executionTime
+                        );
+                        
+                        broadcaster.logMessage(entry);
+                    } catch (Throwable t) {
+                        // Log error if something went wrong
+                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                            lpparam.packageName,
+                            "[SYSTEM] Terminal.transmit",
+                            Constants.TYPE_TRANSMIT,
+                            "Error logging transmit: " + t.getMessage()
+                        );
+                        broadcaster.logMessage(errorEntry);
+                    }
                 }
             });
         } catch (Throwable t) {

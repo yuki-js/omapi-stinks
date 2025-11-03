@@ -35,13 +35,17 @@ public class LogReceiver extends BroadcastReceiver {
                     String threadName = intent.getStringExtra(Constants.EXTRA_THREAD_NAME);
                     int processId = intent.getIntExtra(Constants.EXTRA_PROCESS_ID, 0);
                     long executionTimeMs = intent.getLongExtra(Constants.EXTRA_EXECUTION_TIME_MS, 0);
+                    String error = intent.getStringExtra(Constants.EXTRA_ERROR);
                     
                     Log.d(TAG, "Received structured log from " + packageName + ": " + function + " [TID:" + threadId + ", PID:" + processId + ", " + executionTimeMs + "ms]");
+                    if (error != null && !error.isEmpty()) {
+                        Log.e(TAG, "Log contains error: " + error);
+                    }
                     
                     CallLogger.getInstance().addStructuredLog(packageName, function, type, 
                                                              apduCommand, apduResponse, 
                                                              aid, selectResponse, details,
-                                                             threadId, threadName, processId, executionTimeMs);
+                                                             threadId, threadName, processId, executionTimeMs, error);
                     Log.d(TAG, "Structured log stored. Total logs: " + CallLogger.getInstance().getLogs().size());
                 } else {
                     Log.w(TAG, "Received log without type - ignoring");

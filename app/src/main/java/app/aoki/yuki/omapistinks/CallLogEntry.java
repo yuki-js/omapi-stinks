@@ -1,5 +1,9 @@
 package app.aoki.yuki.omapistinks;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 /**
  * Represents a single OMAPI call log entry with structured data
  */
@@ -18,25 +22,173 @@ public class CallLogEntry {
     private final String threadName;
     private final int processId;
     private final long executionTimeMs;
+    private final String error;
 
-    public CallLogEntry(String timestamp, String shortTimestamp, String packageName, 
-                       String functionName, String type, String apduCommand, String apduResponse,
-                       String aid, String selectResponse, String details,
-                       long threadId, String threadName, int processId, long executionTimeMs) {
-        this.timestamp = timestamp;
-        this.shortTimestamp = shortTimestamp;
-        this.packageName = packageName;
-        this.functionName = functionName;
-        this.type = type;
-        this.apduCommand = apduCommand;
-        this.apduResponse = apduResponse;
-        this.aid = aid;
-        this.selectResponse = selectResponse;
-        this.details = details;
-        this.threadId = threadId;
-        this.threadName = threadName;
-        this.processId = processId;
-        this.executionTimeMs = executionTimeMs;
+    private CallLogEntry(Builder builder) {
+        this.timestamp = builder.timestamp;
+        this.shortTimestamp = builder.shortTimestamp;
+        this.packageName = builder.packageName;
+        this.functionName = builder.functionName;
+        this.type = builder.type;
+        this.apduCommand = builder.apduCommand;
+        this.apduResponse = builder.apduResponse;
+        this.aid = builder.aid;
+        this.selectResponse = builder.selectResponse;
+        this.details = builder.details;
+        this.threadId = builder.threadId;
+        this.threadName = builder.threadName;
+        this.processId = builder.processId;
+        this.executionTimeMs = builder.executionTimeMs;
+        this.error = builder.error;
+    }
+
+    /**
+     * Create a log entry for Channel.transmit calls
+     */
+    public static CallLogEntry createTransmitEntry(String packageName, String functionName,
+                                                   String apduCommand, String apduResponse,
+                                                   long executionTimeMs) {
+        return new Builder()
+                .packageName(packageName)
+                .functionName(functionName)
+                .type(Constants.TYPE_TRANSMIT)
+                .apduCommand(apduCommand)
+                .apduResponse(apduResponse)
+                .executionTimeMs(executionTimeMs)
+                .build();
+    }
+
+    /**
+     * Create a log entry for Session.openChannel calls
+     */
+    public static CallLogEntry createOpenChannelEntry(String packageName, String functionName,
+                                                      String aid, String selectResponse,
+                                                      long executionTimeMs) {
+        return new Builder()
+                .packageName(packageName)
+                .functionName(functionName)
+                .type(Constants.TYPE_OPEN_CHANNEL)
+                .aid(aid)
+                .selectResponse(selectResponse)
+                .executionTimeMs(executionTimeMs)
+                .build();
+    }
+
+    /**
+     * Create a log entry for Application.attach hook
+     */
+    public static CallLogEntry createHookEntry(String packageName, String functionName, String details) {
+        return new Builder()
+                .packageName(packageName)
+                .functionName(functionName)
+                .type(Constants.TYPE_OTHER)
+                .details(details)
+                .executionTimeMs(0)
+                .build();
+    }
+
+    /**
+     * Create a log entry for errors
+     */
+    public static CallLogEntry createErrorEntry(String packageName, String functionName,
+                                                String type, String error) {
+        return new Builder()
+                .packageName(packageName)
+                .functionName(functionName)
+                .type(type)
+                .error(error)
+                .executionTimeMs(0)
+                .build();
+    }
+
+    /**
+     * Builder for CallLogEntry to simplify construction
+     */
+    public static class Builder {
+        private String timestamp;
+        private String shortTimestamp;
+        private String packageName;
+        private String functionName;
+        private String type;
+        private String apduCommand;
+        private String apduResponse;
+        private String aid;
+        private String selectResponse;
+        private String details;
+        private long threadId;
+        private String threadName;
+        private int processId;
+        private long executionTimeMs;
+        private String error;
+
+        public Builder() {
+            // Automatically capture thread and process info
+            Thread currentThread = Thread.currentThread();
+            this.threadId = currentThread.getId();
+            this.threadName = currentThread.getName();
+            this.processId = android.os.Process.myPid();
+            
+            // Automatically create timestamps
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
+            SimpleDateFormat shortFormat = new SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault());
+            Date now = new Date();
+            this.timestamp = dateFormat.format(now);
+            this.shortTimestamp = shortFormat.format(now);
+        }
+
+        public Builder packageName(String packageName) {
+            this.packageName = packageName;
+            return this;
+        }
+
+        public Builder functionName(String functionName) {
+            this.functionName = functionName;
+            return this;
+        }
+
+        public Builder type(String type) {
+            this.type = type;
+            return this;
+        }
+
+        public Builder apduCommand(String apduCommand) {
+            this.apduCommand = apduCommand;
+            return this;
+        }
+
+        public Builder apduResponse(String apduResponse) {
+            this.apduResponse = apduResponse;
+            return this;
+        }
+
+        public Builder aid(String aid) {
+            this.aid = aid;
+            return this;
+        }
+
+        public Builder selectResponse(String selectResponse) {
+            this.selectResponse = selectResponse;
+            return this;
+        }
+
+        public Builder details(String details) {
+            this.details = details;
+            return this;
+        }
+
+        public Builder executionTimeMs(long executionTimeMs) {
+            this.executionTimeMs = executionTimeMs;
+            return this;
+        }
+
+        public Builder error(String error) {
+            this.error = error;
+            return this;
+        }
+
+        public CallLogEntry build() {
+            return new CallLogEntry(this);
+        }
     }
 
     public String getTimestamp() {
@@ -98,6 +250,14 @@ public class CallLogEntry {
         return executionTimeMs;
     }
 
+    public String getError() {
+        return error;
+    }
+
+    public boolean hasError() {
+        return error != null && !error.isEmpty();
+    }
+
     // Legacy compatibility - getMessage() is not used for structured entries
     public String getMessage() {
         return null;
@@ -105,6 +265,9 @@ public class CallLogEntry {
 
     @Override
     public String toString() {
+        if (hasError()) {
+            return timestamp + " [" + packageName + "] " + functionName + " ERROR: " + error;
+        }
         return timestamp + " [" + packageName + "] " + functionName + " (" + type + ")";
     }
 }
