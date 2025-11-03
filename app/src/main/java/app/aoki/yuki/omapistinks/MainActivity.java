@@ -171,10 +171,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshLogs() {
-        List<CallLogger.CallLogEntry> logs = CallLogger.getInstance().getLogs();
+        List<CallLogEntry> logs = CallLogger.getInstance().getLogs();
         
         // Apply filters
-        List<CallLogger.CallLogEntry> filteredLogs = filterLogs(logs);
+        List<CallLogEntry> filteredLogs = filterLogs(logs);
         
         adapter.setLogs(filteredLogs);
         
@@ -183,10 +183,10 @@ public class MainActivity extends AppCompatActivity {
         updateStatus();
     }
     
-    private List<CallLogger.CallLogEntry> filterLogs(List<CallLogger.CallLogEntry> logs) {
-        List<CallLogger.CallLogEntry> filtered = new ArrayList<>();
+    private List<CallLogEntry> filterLogs(List<CallLogEntry> logs) {
+        List<CallLogEntry> filtered = new ArrayList<>();
         
-        for (CallLogger.CallLogEntry entry : logs) {
+        for (CallLogEntry entry : logs) {
             // Apply search query filter
             if (!searchQuery.isEmpty()) {
                 String searchLower = searchQuery.toLowerCase(java.util.Locale.ROOT);
@@ -218,9 +218,9 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void showPackageFilterDialog() {
-        List<CallLogger.CallLogEntry> logs = CallLogger.getInstance().getLogs();
+        List<CallLogEntry> logs = CallLogger.getInstance().getLogs();
         Set<String> packages = new HashSet<>();
-        for (CallLogger.CallLogEntry entry : logs) {
+        for (CallLogEntry entry : logs) {
             if (entry.getPackageName() != null && !entry.getPackageName().isEmpty()) {
                 packages.add(entry.getPackageName());
             }
@@ -261,9 +261,9 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void showFunctionFilterDialog() {
-        List<CallLogger.CallLogEntry> logs = CallLogger.getInstance().getLogs();
+        List<CallLogEntry> logs = CallLogger.getInstance().getLogs();
         Set<String> functions = new HashSet<>();
-        for (CallLogger.CallLogEntry entry : logs) {
+        for (CallLogEntry entry : logs) {
             functions.add(entry.getFunctionName());
         }
         

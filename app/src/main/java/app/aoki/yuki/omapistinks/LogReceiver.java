@@ -24,8 +24,8 @@ public class LogReceiver extends BroadcastReceiver {
                 String type = intent.getStringExtra(Constants.EXTRA_TYPE);
                 
                 // Check if this is structured data
+                // All logs should now be structured
                 if (type != null) {
-                    // Structured log
                     String apduCommand = intent.getStringExtra(Constants.EXTRA_APDU_COMMAND);
                     String apduResponse = intent.getStringExtra(Constants.EXTRA_APDU_RESPONSE);
                     String aid = intent.getStringExtra(Constants.EXTRA_AID);
@@ -39,16 +39,7 @@ public class LogReceiver extends BroadcastReceiver {
                                                              aid, selectResponse, details);
                     Log.d(TAG, "Structured log stored. Total logs: " + CallLogger.getInstance().getLogs().size());
                 } else {
-                    // Legacy text-based log (for backward compatibility)
-                    String message = intent.getStringExtra(Constants.EXTRA_MESSAGE);
-                    
-                    if (message != null) {
-                        Log.d(TAG, "Received legacy log from " + packageName + ": " + message);
-                        CallLogger.getInstance().addLog(message, packageName);
-                        Log.d(TAG, "Legacy log stored. Total logs: " + CallLogger.getInstance().getLogs().size());
-                    } else {
-                        Log.w(TAG, "Message is null");
-                    }
+                    Log.w(TAG, "Received log without type - ignoring");
                 }
             }
         } catch (Exception e) {

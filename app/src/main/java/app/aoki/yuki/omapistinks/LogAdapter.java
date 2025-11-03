@@ -14,13 +14,13 @@ import java.util.List;
 
 public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
 
-    private List<CallLogger.CallLogEntry> logs;
+    private List<CallLogEntry> logs;
 
     public LogAdapter() {
         this.logs = new ArrayList<>();
     }
 
-    public void setLogs(List<CallLogger.CallLogEntry> logs) {
+    public void setLogs(List<CallLogEntry> logs) {
         this.logs = logs;
         notifyDataSetChanged();
     }
@@ -43,7 +43,7 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         return holder;
     }
     
-    private void openDetailActivity(android.content.Context context, CallLogger.CallLogEntry entry) {
+    private void openDetailActivity(android.content.Context context, CallLogEntry entry) {
         android.content.Intent intent = new android.content.Intent(context, LogDetailActivity.class);
         intent.putExtra("timestamp", entry.getTimestamp());
         intent.putExtra("packageName", entry.getPackageName());
@@ -64,7 +64,7 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull LogViewHolder holder, int position) {
-        CallLogger.CallLogEntry entry = logs.get(position);
+        CallLogEntry entry = logs.get(position);
         
         // Set timestamp (short format)
         holder.timestampText.setText(entry.getShortTimestamp());
@@ -108,7 +108,7 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         
         // Handle APDU display for transmit calls
         if (entry.isTransmit() && entry.getApduInfo() != null) {
-            CallLogger.ApduInfo apdu = entry.getApduInfo();
+            ApduInfo apdu = entry.getApduInfo();
             
             // Show command if available
             if (apdu.getCommand() != null) {
