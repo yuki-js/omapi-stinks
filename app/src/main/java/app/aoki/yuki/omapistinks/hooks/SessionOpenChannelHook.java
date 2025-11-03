@@ -27,14 +27,28 @@ public class SessionOpenChannelHook {
             
             // Hook version with byte[] aid
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, new XC_MethodHook() {
+                private long startTime;
+                
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    startTime = System.currentTimeMillis();
+                }
+                
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    long executionTime = System.currentTimeMillis() - startTime;
                     byte[] aid = (byte[]) param.args[0];
                     String aidHex = LogBroadcaster.bytesToHex(aid);
                     Object channel = param.getResult();
                     
                     // Get select response from channel
                     String selectResponse = extractSelectResponse(channel);
+                    
+                    // Get thread information
+                    Thread currentThread = Thread.currentThread();
+                    long threadId = currentThread.getId();
+                    String threadName = currentThread.getName();
+                    int processId = android.os.Process.myPid();
                     
                     CallLogEntry entry = new CallLogEntry(
                         broadcaster.createTimestamp(),
@@ -46,7 +60,11 @@ public class SessionOpenChannelHook {
                         null, // no APDU response for open channel
                         aidHex,
                         selectResponse,
-                        null  // no additional details
+                        null, // no additional details
+                        threadId,
+                        threadName,
+                        processId,
+                        executionTime
                     );
                     
                     broadcaster.logMessage(entry);
@@ -55,8 +73,16 @@ public class SessionOpenChannelHook {
             
             // Hook version with byte[] aid and byte P2
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, byte.class, new XC_MethodHook() {
+                private long startTime;
+                
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    startTime = System.currentTimeMillis();
+                }
+                
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    long executionTime = System.currentTimeMillis() - startTime;
                     byte[] aid = (byte[]) param.args[0];
                     byte p2 = (byte) param.args[1];
                     String aidHex = LogBroadcaster.bytesToHex(aid);
@@ -64,6 +90,12 @@ public class SessionOpenChannelHook {
                     
                     // Get select response from channel
                     String selectResponse = extractSelectResponse(channel);
+                    
+                    // Get thread information
+                    Thread currentThread = Thread.currentThread();
+                    long threadId = currentThread.getId();
+                    String threadName = currentThread.getName();
+                    int processId = android.os.Process.myPid();
                     
                     CallLogEntry entry = new CallLogEntry(
                         broadcaster.createTimestamp(),
@@ -75,7 +107,11 @@ public class SessionOpenChannelHook {
                         null, // no APDU response for open channel
                         aidHex,
                         selectResponse,
-                        null  // no additional details
+                        null, // no additional details
+                        threadId,
+                        threadName,
+                        processId,
+                        executionTime
                     );
                     
                     broadcaster.logMessage(entry);

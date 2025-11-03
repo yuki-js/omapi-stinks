@@ -14,10 +14,15 @@ public class CallLogEntry {
     private final String aid;
     private final String selectResponse;
     private final String details;
+    private final long threadId;
+    private final String threadName;
+    private final int processId;
+    private final long executionTimeMs;
 
     public CallLogEntry(String timestamp, String shortTimestamp, String packageName, 
                        String functionName, String type, String apduCommand, String apduResponse,
-                       String aid, String selectResponse, String details) {
+                       String aid, String selectResponse, String details,
+                       long threadId, String threadName, int processId, long executionTimeMs) {
         this.timestamp = timestamp;
         this.shortTimestamp = shortTimestamp;
         this.packageName = packageName;
@@ -28,6 +33,10 @@ public class CallLogEntry {
         this.aid = aid;
         this.selectResponse = selectResponse;
         this.details = details;
+        this.threadId = threadId;
+        this.threadName = threadName;
+        this.processId = processId;
+        this.executionTimeMs = executionTimeMs;
     }
 
     public String getTimestamp() {
@@ -71,6 +80,22 @@ public class CallLogEntry {
 
     public String getSelectResponse() {
         return selectResponse;
+    }
+
+    public long getThreadId() {
+        return threadId;
+    }
+
+    public String getThreadName() {
+        return threadName;
+    }
+
+    public int getProcessId() {
+        return processId;
+    }
+
+    public long getExecutionTimeMs() {
+        return executionTimeMs;
     }
 
     // Legacy compatibility - getMessage() is not used for structured entries

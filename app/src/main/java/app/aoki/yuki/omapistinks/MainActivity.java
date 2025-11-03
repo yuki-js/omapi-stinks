@@ -349,56 +349,55 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         
-        // Export as JSON
-        StringBuilder jsonBuilder = new StringBuilder();
-        jsonBuilder.append("[\n");
+        // Export as CSV
+        StringBuilder csvBuilder = new StringBuilder();
         
-        for (int i = 0; i < filteredLogs.size(); i++) {
-            CallLogEntry entry = filteredLogs.get(i);
-            jsonBuilder.append("  {\n");
-            jsonBuilder.append("    \"timestamp\": \"").append(entry.getTimestamp()).append("\",\n");
-            jsonBuilder.append("    \"package\": \"").append(entry.getPackageName()).append("\",\n");
-            jsonBuilder.append("    \"function\": \"").append(entry.getFunctionName()).append("\",\n");
-            jsonBuilder.append("    \"type\": \"").append(entry.getType()).append("\"");
+        // CSV Header
+        csvBuilder.append("Timestamp,Package,Function,Type,Thread ID,Thread Name,Process ID,Execution Time (ms),APDU Command,APDU Response,AID,Select Response,Details\n");
+        
+        // CSV Data
+        for (CallLogEntry entry : filteredLogs) {
+            csvBuilder.append(escapeCsv(entry.getTimestamp())).append(",");
+            csvBuilder.append(escapeCsv(entry.getPackageName())).append(",");
+            csvBuilder.append(escapeCsv(entry.getFunctionName())).append(",");
+            csvBuilder.append(escapeCsv(entry.getType())).append(",");
+            csvBuilder.append(entry.getThreadId()).append(",");
+            csvBuilder.append(escapeCsv(entry.getThreadName())).append(",");
+            csvBuilder.append(entry.getProcessId()).append(",");
+            csvBuilder.append(entry.getExecutionTimeMs()).append(",");
             
             if (entry.getApduInfo() != null) {
-                jsonBuilder.append(",\n");
-                jsonBuilder.append("    \"apdu_command\": \"").append(entry.getApduInfo().getCommand()).append("\",\n");
-                jsonBuilder.append("    \"apdu_response\": \"").append(entry.getApduInfo().getResponse()).append("\"");
+                csvBuilder.append(escapeCsv(entry.getApduInfo().getCommand())).append(",");
+                csvBuilder.append(escapeCsv(entry.getApduInfo().getResponse())).append(",");
+            } else {
+                csvBuilder.append(",,");
             }
             
-            if (entry.getAid() != null) {
-                jsonBuilder.append(",\n");
-                jsonBuilder.append("    \"aid\": \"").append(entry.getAid()).append("\"");
-            }
-            
-            if (entry.getSelectResponse() != null) {
-                jsonBuilder.append(",\n");
-                jsonBuilder.append("    \"select_response\": \"").append(entry.getSelectResponse()).append("\"");
-            }
-            
-            if (entry.getDetails() != null) {
-                jsonBuilder.append(",\n");
-                jsonBuilder.append("    \"details\": \"").append(entry.getDetails()).append("\"");
-            }
-            
-            jsonBuilder.append("\n  }");
-            if (i < filteredLogs.size() - 1) {
-                jsonBuilder.append(",");
-            }
-            jsonBuilder.append("\n");
+            csvBuilder.append(escapeCsv(entry.getAid())).append(",");
+            csvBuilder.append(escapeCsv(entry.getSelectResponse())).append(",");
+            csvBuilder.append(escapeCsv(entry.getDetails()));
+            csvBuilder.append("\n");
         }
-        
-        jsonBuilder.append("]\n");
         
         // Share via Intent
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("application/json");
-        shareIntent.putExtra(Intent.EXTRA_TEXT, jsonBuilder.toString());
+        shareIntent.setType("text/csv");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, csvBuilder.toString());
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "OMAPI Stinks Export - " + filteredLogs.size() + " logs");
         
-        Intent chooser = Intent.createChooser(shareIntent, "Export logs");
+        Intent chooser = Intent.createChooser(shareIntent, "Export logs as CSV");
         startActivity(chooser);
+    }
+    
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
     
     private void showHelp() {

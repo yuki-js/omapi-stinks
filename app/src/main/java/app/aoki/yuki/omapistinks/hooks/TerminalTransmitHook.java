@@ -18,17 +18,26 @@ public class TerminalTransmitHook {
             Class<?> terminalClass = XposedHelpers.findClass("com.android.se.Terminal", lpparam.classLoader);
             XposedHelpers.findAndHookMethod(terminalClass, "transmit", byte[].class, new XC_MethodHook() {
                 private String commandHex;
+                private long startTime;
                 
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     byte[] command = (byte[]) param.args[0];
                     commandHex = LogBroadcaster.bytesToHex(command);
+                    startTime = System.currentTimeMillis();
                 }
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    long executionTime = System.currentTimeMillis() - startTime;
                     byte[] response = (byte[]) param.getResult();
                     String responseHex = response != null ? LogBroadcaster.bytesToHex(response) : null;
+                    
+                    // Get thread information
+                    Thread currentThread = Thread.currentThread();
+                    long threadId = currentThread.getId();
+                    String threadName = currentThread.getName();
+                    int processId = android.os.Process.myPid();
                     
                     // Create structured log entry
                     CallLogEntry entry = new CallLogEntry(
@@ -41,7 +50,11 @@ public class TerminalTransmitHook {
                         responseHex,
                         null, // no AID for transmit
                         null, // no select response for transmit
-                        null  // no details for transmit
+                        null, // no details for transmit
+                        threadId,
+                        threadName,
+                        processId,
+                        executionTime
                     );
                     
                     broadcaster.logMessage(entry);

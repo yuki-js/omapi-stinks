@@ -38,6 +38,10 @@ public class LogDetailActivity extends AppCompatActivity {
         String aid = getIntent().getStringExtra("aid");
         String selectResponse = getIntent().getStringExtra("selectResponse");
         String details = getIntent().getStringExtra("details");
+        long threadId = getIntent().getLongExtra("threadId", 0);
+        String threadName = getIntent().getStringExtra("threadName");
+        int processId = getIntent().getIntExtra("processId", 0);
+        long executionTimeMs = getIntent().getLongExtra("executionTimeMs", 0);
 
         // Get views
         TextView timestampView = findViewById(R.id.detailTimestamp);
@@ -67,7 +71,21 @@ public class LogDetailActivity extends AppCompatActivity {
         timestampView.setText("⏱ " + (timestamp != null ? timestamp : "N/A"));
         packageView.setText("📦 " + (packageName != null ? packageName : "N/A"));
         functionView.setText("⚙ " + (function != null ? function : "N/A"));
-        typeView.setText("🏷 " + (type != null ? type : "N/A"));
+        
+        // Build type info with execution details
+        StringBuilder typeInfo = new StringBuilder();
+        typeInfo.append("🏷 ").append(type != null ? type : "N/A");
+        if (executionTimeMs > 0) {
+            typeInfo.append("\n⏲ Execution time: ").append(executionTimeMs).append(" ms");
+        }
+        if (threadId > 0) {
+            typeInfo.append("\n🧵 Thread: ").append(threadName != null ? threadName : "unknown");
+            typeInfo.append(" (ID: ").append(threadId).append(")");
+        }
+        if (processId > 0) {
+            typeInfo.append("\n🔢 Process ID: ").append(processId);
+        }
+        typeView.setText(typeInfo.toString());
 
         // Hide all cards initially
         cardApduCommand.setVisibility(View.GONE);

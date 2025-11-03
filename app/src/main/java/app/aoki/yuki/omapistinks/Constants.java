@@ -19,6 +19,10 @@ public class Constants {
     public static final String EXTRA_AID = "aid";
     public static final String EXTRA_SELECT_RESPONSE = "selectResponse";
     public static final String EXTRA_DETAILS = "details";
+    public static final String EXTRA_THREAD_ID = "threadId";
+    public static final String EXTRA_THREAD_NAME = "threadName";
+    public static final String EXTRA_PROCESS_ID = "processId";
+    public static final String EXTRA_EXECUTION_TIME_MS = "executionTimeMs";
     
     // Package name for intent targeting
     public static final String PACKAGE_NAME = "app.aoki.yuki.omapistinks";
