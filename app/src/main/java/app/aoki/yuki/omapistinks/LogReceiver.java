@@ -31,12 +31,17 @@ public class LogReceiver extends BroadcastReceiver {
                     String aid = intent.getStringExtra(Constants.EXTRA_AID);
                     String selectResponse = intent.getStringExtra(Constants.EXTRA_SELECT_RESPONSE);
                     String details = intent.getStringExtra(Constants.EXTRA_DETAILS);
+                    long threadId = intent.getLongExtra(Constants.EXTRA_THREAD_ID, 0);
+                    String threadName = intent.getStringExtra(Constants.EXTRA_THREAD_NAME);
+                    int processId = intent.getIntExtra(Constants.EXTRA_PROCESS_ID, 0);
+                    long executionTimeMs = intent.getLongExtra(Constants.EXTRA_EXECUTION_TIME_MS, 0);
                     
-                    Log.d(TAG, "Received structured log from " + packageName + ": " + function);
+                    Log.d(TAG, "Received structured log from " + packageName + ": " + function + " [TID:" + threadId + ", PID:" + processId + ", " + executionTimeMs + "ms]");
                     
                     CallLogger.getInstance().addStructuredLog(packageName, function, type, 
                                                              apduCommand, apduResponse, 
-                                                             aid, selectResponse, details);
+                                                             aid, selectResponse, details,
+                                                             threadId, threadName, processId, executionTimeMs);
                     Log.d(TAG, "Structured log stored. Total logs: " + CallLogger.getInstance().getLogs().size());
                 } else {
                     Log.w(TAG, "Received log without type - ignoring");

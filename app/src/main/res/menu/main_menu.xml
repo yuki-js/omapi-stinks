@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     
     <item
-        android:id="@+id/action_refresh"
-        android:title="@string/action_refresh"
-        android:icon="@android:drawable/ic_menu_rotate"
+        android:id="@+id/action_filter"
+        android:title="@string/action_filter"
+        android:icon="@android:drawable/ic_menu_search"
         app:showAsAction="ifRoom" />
     
     <item
@@ -13,6 +13,11 @@
         android:title="@string/action_clear"
         android:icon="@android:drawable/ic_menu_delete"
         app:showAsAction="ifRoom" />
+    
+    <item
+        android:id="@+id/action_export"
+        android:title="@string/action_export"
+        app:showAsAction="never" />
     
     <item
         android:id="@+id/action_view_file_log"

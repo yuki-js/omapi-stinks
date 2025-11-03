@@ -29,7 +29,7 @@ public class LogBroadcaster {
      */
     public void logMessage(CallLogEntry entry) {
         try {
-            XposedBridge.log(TAG + ": [" + packageName + "] " + entry.getFunctionName() + " (" + entry.getType() + ")");
+            XposedBridge.log(TAG + ": [" + packageName + "] " + entry.getFunctionName() + " (" + entry.getType() + ") [TID:" + entry.getThreadId() + ", PID:" + entry.getProcessId() + ", " + entry.getExecutionTimeMs() + "ms]");
             
             if (appContext != null) {
                 Intent intent = new Intent(Constants.BROADCAST_ACTION);
@@ -47,6 +47,10 @@ public class LogBroadcaster {
                 intent.putExtra(Constants.EXTRA_AID, entry.getAid());
                 intent.putExtra(Constants.EXTRA_SELECT_RESPONSE, entry.getSelectResponse());
                 intent.putExtra(Constants.EXTRA_DETAILS, entry.getDetails());
+                intent.putExtra(Constants.EXTRA_THREAD_ID, entry.getThreadId());
+                intent.putExtra(Constants.EXTRA_THREAD_NAME, entry.getThreadName());
+                intent.putExtra(Constants.EXTRA_PROCESS_ID, entry.getProcessId());
+                intent.putExtra(Constants.EXTRA_EXECUTION_TIME_MS, entry.getExecutionTimeMs());
                 intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
                 
                 appContext.sendBroadcast(intent);

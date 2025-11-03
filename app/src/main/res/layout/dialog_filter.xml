@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Search EditText -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search logs..."
+        app:endIconMode="clear_text"
+        app:startIconDrawable="@android:drawable/ic_menu_search">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/dialogSearchEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:maxLines="1" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Package Filter -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Package Filter"
+        android:textStyle="bold"
+        android:textSize="14sp" />
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/dialogFilterPackageChip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Package"
+        style="@style/Widget.MaterialComponents.Chip.Filter" />
+
+    <!-- Function Filter -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Function Filter"
+        android:textStyle="bold"
+        android:textSize="14sp" />
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/dialogFilterFunctionChip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Function"
+        style="@style/Widget.MaterialComponents.Chip.Filter" />
+
+    <!-- Time Range Filter -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Time Range"
+        android:textStyle="bold"
+        android:textSize="14sp" />
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/dialogFilterTimeChip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Time Range"
+        style="@style/Widget.MaterialComponents.Chip.Filter" />
+
+</LinearLayout>

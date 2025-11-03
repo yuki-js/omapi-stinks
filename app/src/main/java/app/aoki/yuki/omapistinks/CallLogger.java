@@ -46,11 +46,13 @@ public class CallLogger {
      */
     public synchronized void addStructuredLog(String packageName, String function, String type, 
                                              String apduCommand, String apduResponse, 
-                                             String aid, String selectResponse, String details) {
+                                             String aid, String selectResponse, String details,
+                                             long threadId, String threadName, int processId, long executionTimeMs) {
         String timestamp = dateFormat.format(new Date());
         String shortTimestamp = shortDateFormat.format(new Date());
         CallLogEntry entry = new CallLogEntry(timestamp, shortTimestamp, packageName, function, 
-                                             type, apduCommand, apduResponse, aid, selectResponse, details);
+                                             type, apduCommand, apduResponse, aid, selectResponse, details,
+                                             threadId, threadName, processId, executionTimeMs);
         addLog(entry);
     }
 

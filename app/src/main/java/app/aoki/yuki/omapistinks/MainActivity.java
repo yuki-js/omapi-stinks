@@ -38,11 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private LogAdapter adapter;
     private Handler handler;
     private Runnable refreshRunnable;
-    private TextView statusText;
-    private TextInputEditText searchEditText;
-    private Chip filterPackageChip;
-    private Chip filterFunctionChip;
-    private Chip filterTimeChip;
     
     private static final int REFRESH_INTERVAL_MS = 1000;
     private int logCount = 0;
@@ -66,59 +61,20 @@ public class MainActivity extends AppCompatActivity {
             getSupportActionBar().setTitle(R.string.app_name);
         }
 
-        statusText = findViewById(R.id.statusText);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         
         adapter = new LogAdapter();
         recyclerView.setAdapter(adapter);
 
-        // Set up search
-        searchEditText = findViewById(R.id.searchEditText);
-        searchEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                searchQuery = s.toString();
-                refreshLogs();
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
-        // Set up filter chips
-        filterPackageChip = findViewById(R.id.filterPackageChip);
-        filterFunctionChip = findViewById(R.id.filterFunctionChip);
-        filterTimeChip = findViewById(R.id.filterTimeChip);
-
-        filterPackageChip.setOnClickListener(v -> showPackageFilterDialog());
-        filterFunctionChip.setOnClickListener(v -> showFunctionFilterDialog());
-        filterTimeChip.setOnClickListener(v -> showTimeRangeDialog());
-
-        // Update status
-        updateStatus();
-
         handler = new Handler(Looper.getMainLooper());
         refreshRunnable = new Runnable() {
             @Override
             public void run() {
                 refreshLogs();
-                updateStatus();
                 handler.postDelayed(this, REFRESH_INTERVAL_MS);
             }
         };
-    }
-    
-    private void updateStatus() {
-        int currentLogCount = CallLogger.getInstance().getLogs().size();
-        if (currentLogCount > 0) {
-            statusText.setText("✓ Module active - " + currentLogCount + " logs captured");
-        } else {
-            statusText.setText("⚠ Waiting for hooks... Check LSPosed scope and logs");
-        }
     }
 
     @Override
@@ -154,13 +110,14 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         
-        if (id == R.id.action_clear) {
+        if (id == R.id.action_filter) {
+            showFilterDialog();
+            return true;
+        } else if (id == R.id.action_clear) {
             clearLogs();
             return true;
-        } else if (id == R.id.action_refresh) {
-            refreshLogs();
-            updateStatus();
-            Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.action_export) {
+            exportLogs();
             return true;
         } else if (id == R.id.action_help) {
             showHelp();
@@ -179,8 +136,6 @@ public class MainActivity extends AppCompatActivity {
         adapter.setLogs(filteredLogs);
         
         // Don't auto-scroll - let user control their scroll position
-        
-        updateStatus();
     }
     
     private List<CallLogEntry> filterLogs(List<CallLogEntry> logs) {
@@ -190,9 +145,10 @@ public class MainActivity extends AppCompatActivity {
             // Apply search query filter
             if (!searchQuery.isEmpty()) {
                 String searchLower = searchQuery.toLowerCase(java.util.Locale.ROOT);
-                boolean matches = entry.getMessage().toLowerCase(java.util.Locale.ROOT).contains(searchLower) ||
+                String message = entry.getMessage();
+                boolean matches = (message != null && message.toLowerCase(java.util.Locale.ROOT).contains(searchLower)) ||
                                 (entry.getPackageName() != null && entry.getPackageName().toLowerCase(java.util.Locale.ROOT).contains(searchLower)) ||
-                                entry.getFunctionName().toLowerCase(java.util.Locale.ROOT).contains(searchLower);
+                                (entry.getFunctionName() != null && entry.getFunctionName().toLowerCase(java.util.Locale.ROOT).contains(searchLower));
                 if (!matches) continue;
             }
             
@@ -210,6 +166,18 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             
+            // Apply time range filter
+            if (timeRangeStart > 0 || timeRangeEnd < Long.MAX_VALUE) {
+                try {
+                    long entryTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", java.util.Locale.getDefault()).parse(entry.getTimestamp()).getTime();
+                    if (entryTime < timeRangeStart || entryTime > timeRangeEnd) {
+                        continue;
+                    }
+                } catch (Exception e) {
+                    // If timestamp parsing fails, include the entry
+                }
+            }
+            
             // All filters passed
             filtered.add(entry);
         }
@@ -217,7 +185,55 @@ public class MainActivity extends AppCompatActivity {
         return filtered;
     }
     
-    private void showPackageFilterDialog() {
+    private void showFilterDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Filter Logs");
+        
+        android.view.LayoutInflater inflater = getLayoutInflater();
+        android.view.View dialogView = inflater.inflate(R.layout.dialog_filter, null);
+        builder.setView(dialogView);
+        
+        // Get views from dialog
+        TextInputEditText dialogSearchEditText = dialogView.findViewById(R.id.dialogSearchEditText);
+        Chip dialogPackageChip = dialogView.findViewById(R.id.dialogFilterPackageChip);
+        Chip dialogFunctionChip = dialogView.findViewById(R.id.dialogFilterFunctionChip);
+        Chip dialogTimeChip = dialogView.findViewById(R.id.dialogFilterTimeChip);
+        
+        // Set current values
+        dialogSearchEditText.setText(searchQuery);
+        if (packageFilter != null) {
+            dialogPackageChip.setChecked(true);
+            dialogPackageChip.setText("Package: " + packageFilter.substring(packageFilter.lastIndexOf('.') + 1));
+        }
+        if (functionFilter != null) {
+            dialogFunctionChip.setChecked(true);
+            dialogFunctionChip.setText("Fn: " + functionFilter);
+        }
+        
+        // Set up chip click listeners
+        dialogPackageChip.setOnClickListener(v -> showPackageFilterDialogInner(dialogPackageChip));
+        dialogFunctionChip.setOnClickListener(v -> showFunctionFilterDialogInner(dialogFunctionChip));
+        dialogTimeChip.setOnClickListener(v -> showTimeRangeDialogInner(dialogTimeChip));
+        
+        builder.setPositiveButton("Apply", (dialog, which) -> {
+            searchQuery = dialogSearchEditText.getText().toString();
+            refreshLogs();
+        });
+        
+        builder.setNeutralButton("Clear All", (dialog, which) -> {
+            searchQuery = "";
+            packageFilter = null;
+            functionFilter = null;
+            timeRangeStart = 0;
+            timeRangeEnd = Long.MAX_VALUE;
+            refreshLogs();
+        });
+        
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+    
+    private void showPackageFilterDialogInner(Chip parentChip) {
         List<CallLogEntry> logs = CallLogger.getInstance().getLogs();
         Set<String> packages = new HashSet<>();
         for (CallLogEntry entry : logs) {
@@ -243,24 +259,22 @@ public class MainActivity extends AppCompatActivity {
         
         builder.setSingleChoiceItems(packageArray, selectedIndex, (dialog, which) -> {
             packageFilter = packageArray[which];
-            filterPackageChip.setChecked(true);
-            filterPackageChip.setText("Package: " + packageFilter.substring(packageFilter.lastIndexOf('.') + 1));
-            refreshLogs();
+            parentChip.setChecked(true);
+            parentChip.setText("Package: " + packageFilter.substring(packageFilter.lastIndexOf('.') + 1));
             dialog.dismiss();
         });
         
         builder.setNeutralButton("Clear", (dialog, which) -> {
             packageFilter = null;
-            filterPackageChip.setChecked(false);
-            filterPackageChip.setText("Package");
-            refreshLogs();
+            parentChip.setChecked(false);
+            parentChip.setText("Select Package");
         });
         
         builder.setNegativeButton("Cancel", null);
         builder.show();
     }
     
-    private void showFunctionFilterDialog() {
+    private void showFunctionFilterDialogInner(Chip parentChip) {
         List<CallLogEntry> logs = CallLogger.getInstance().getLogs();
         Set<String> functions = new HashSet<>();
         for (CallLogEntry entry : logs) {
@@ -284,24 +298,22 @@ public class MainActivity extends AppCompatActivity {
         
         builder.setSingleChoiceItems(functionArray, selectedIndex, (dialog, which) -> {
             functionFilter = functionArray[which];
-            filterFunctionChip.setChecked(true);
-            filterFunctionChip.setText("Fn: " + functionFilter);
-            refreshLogs();
+            parentChip.setChecked(true);
+            parentChip.setText("Fn: " + functionFilter);
             dialog.dismiss();
         });
         
         builder.setNeutralButton("Clear", (dialog, which) -> {
             functionFilter = null;
-            filterFunctionChip.setChecked(false);
-            filterFunctionChip.setText("Function");
-            refreshLogs();
+            parentChip.setChecked(false);
+            parentChip.setText("Select Function");
         });
         
         builder.setNegativeButton("Cancel", null);
         builder.show();
     }
     
-    private void showTimeRangeDialog() {
+    private void showTimeRangeDialogInner(Chip parentChip) {
         // Simple time range filter - last N seconds
         String[] options = {"Last 10 seconds", "Last 30 seconds", "Last minute", "Last 5 minutes", "All time"};
         long[] timeRanges = {10000, 30000, 60000, 300000, 0};
@@ -313,15 +325,14 @@ public class MainActivity extends AppCompatActivity {
             if (timeRanges[which] == 0) {
                 timeRangeStart = 0;
                 timeRangeEnd = Long.MAX_VALUE;
-                filterTimeChip.setChecked(false);
-                filterTimeChip.setText("Time Range");
+                parentChip.setChecked(false);
+                parentChip.setText("Select Time Range");
             } else {
                 timeRangeEnd = System.currentTimeMillis();
                 timeRangeStart = timeRangeEnd - timeRanges[which];
-                filterTimeChip.setChecked(true);
-                filterTimeChip.setText(options[which]);
+                parentChip.setChecked(true);
+                parentChip.setText(options[which]);
             }
-            refreshLogs();
         });
         
         builder.setNegativeButton("Cancel", null);
@@ -334,21 +345,34 @@ public class MainActivity extends AppCompatActivity {
         
         // Reset filters
         searchQuery = "";
-        searchEditText.setText("");
         packageFilter = null;
         functionFilter = null;
         timeRangeStart = 0;
         timeRangeEnd = Long.MAX_VALUE;
         
-        filterPackageChip.setChecked(false);
-        filterPackageChip.setText("Package");
-        filterFunctionChip.setChecked(false);
-        filterFunctionChip.setText("Function");
-        filterTimeChip.setChecked(false);
-        filterTimeChip.setText("Time Range");
-        
         refreshLogs();
         Toast.makeText(this, "Logs cleared", Toast.LENGTH_SHORT).show();
+    }
+    
+    private void exportLogs() {
+        List<CallLogEntry> filteredLogs = filterLogs(CallLogger.getInstance().getLogs());
+        
+        if (filteredLogs.isEmpty()) {
+            Toast.makeText(this, "No logs to export", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Export as CSV using dedicated exporter
+        String csvContent = CsvExporter.exportToCsv(filteredLogs);
+        
+        // Share via Intent
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/csv");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, csvContent);
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "OMAPI Stinks Export - " + filteredLogs.size() + " logs");
+        
+        Intent chooser = Intent.createChooser(shareIntent, "Export logs as CSV");
+        startActivity(chooser);
     }
     
     private void showHelp() {
