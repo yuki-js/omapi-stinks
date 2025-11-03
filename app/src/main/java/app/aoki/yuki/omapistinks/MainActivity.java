@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private LogAdapter adapter;
     private Handler handler;
     private Runnable refreshRunnable;
-    private TextView statusText;
     private TextInputEditText searchEditText;
     private Chip filterPackageChip;
     private Chip filterFunctionChip;
@@ -66,7 +65,6 @@ public class MainActivity extends AppCompatActivity {
             getSupportActionBar().setTitle(R.string.app_name);
         }
 
-        statusText = findViewById(R.id.statusText);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         
@@ -98,27 +96,14 @@ public class MainActivity extends AppCompatActivity {
         filterFunctionChip.setOnClickListener(v -> showFunctionFilterDialog());
         filterTimeChip.setOnClickListener(v -> showTimeRangeDialog());
 
-        // Update status
-        updateStatus();
-
         handler = new Handler(Looper.getMainLooper());
         refreshRunnable = new Runnable() {
             @Override
             public void run() {
                 refreshLogs();
-                updateStatus();
                 handler.postDelayed(this, REFRESH_INTERVAL_MS);
             }
         };
-    }
-    
-    private void updateStatus() {
-        int currentLogCount = CallLogger.getInstance().getLogs().size();
-        if (currentLogCount > 0) {
-            statusText.setText("✓ Module active - " + currentLogCount + " logs captured");
-        } else {
-            statusText.setText("⚠ Waiting for hooks... Check LSPosed scope and logs");
-        }
     }
 
     @Override
@@ -157,11 +142,6 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_clear) {
             clearLogs();
             return true;
-        } else if (id == R.id.action_refresh) {
-            refreshLogs();
-            updateStatus();
-            Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
-            return true;
         } else if (id == R.id.action_help) {
             showHelp();
             return true;
@@ -179,8 +159,6 @@ public class MainActivity extends AppCompatActivity {
         adapter.setLogs(filteredLogs);
         
         // Don't auto-scroll - let user control their scroll position
-        
-        updateStatus();
     }
     
     private List<CallLogEntry> filterLogs(List<CallLogEntry> logs) {
