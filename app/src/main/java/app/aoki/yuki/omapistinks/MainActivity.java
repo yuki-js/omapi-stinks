@@ -145,9 +145,10 @@ public class MainActivity extends AppCompatActivity {
             // Apply search query filter
             if (!searchQuery.isEmpty()) {
                 String searchLower = searchQuery.toLowerCase(java.util.Locale.ROOT);
-                boolean matches = entry.getMessage().toLowerCase(java.util.Locale.ROOT).contains(searchLower) ||
+                String message = entry.getMessage();
+                boolean matches = (message != null && message.toLowerCase(java.util.Locale.ROOT).contains(searchLower)) ||
                                 (entry.getPackageName() != null && entry.getPackageName().toLowerCase(java.util.Locale.ROOT).contains(searchLower)) ||
-                                entry.getFunctionName().toLowerCase(java.util.Locale.ROOT).contains(searchLower);
+                                (entry.getFunctionName() != null && entry.getFunctionName().toLowerCase(java.util.Locale.ROOT).contains(searchLower));
                 if (!matches) continue;
             }
             
@@ -162,6 +163,18 @@ public class MainActivity extends AppCompatActivity {
             if (functionFilter != null && !functionFilter.isEmpty()) {
                 if (!entry.getFunctionName().equals(functionFilter)) {
                     continue;
+                }
+            }
+            
+            // Apply time range filter
+            if (timeRangeStart > 0 || timeRangeEnd < Long.MAX_VALUE) {
+                try {
+                    long entryTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", java.util.Locale.getDefault()).parse(entry.getTimestamp()).getTime();
+                    if (entryTime < timeRangeStart || entryTime > timeRangeEnd) {
+                        continue;
+                    }
+                } catch (Exception e) {
+                    // If timestamp parsing fails, include the entry
                 }
             }
             
@@ -316,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
                 parentChip.setText("Select Time Range");
             } else {
                 timeRangeEnd = System.currentTimeMillis();
-                timeRangeStart = timeRanges[which];
+                timeRangeStart = timeRangeEnd - timeRanges[which];
                 parentChip.setChecked(true);
                 parentChip.setText(options[which]);
             }
