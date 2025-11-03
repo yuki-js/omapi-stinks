@@ -38,10 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private LogAdapter adapter;
     private Handler handler;
     private Runnable refreshRunnable;
-    private TextInputEditText searchEditText;
-    private Chip filterPackageChip;
-    private Chip filterFunctionChip;
-    private Chip filterTimeChip;
     
     private static final int REFRESH_INTERVAL_MS = 1000;
     private int logCount = 0;
@@ -70,31 +66,6 @@ public class MainActivity extends AppCompatActivity {
         
         adapter = new LogAdapter();
         recyclerView.setAdapter(adapter);
-
-        // Set up search
-        searchEditText = findViewById(R.id.searchEditText);
-        searchEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                searchQuery = s.toString();
-                refreshLogs();
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
-        // Set up filter chips
-        filterPackageChip = findViewById(R.id.filterPackageChip);
-        filterFunctionChip = findViewById(R.id.filterFunctionChip);
-        filterTimeChip = findViewById(R.id.filterTimeChip);
-
-        filterPackageChip.setOnClickListener(v -> showPackageFilterDialog());
-        filterFunctionChip.setOnClickListener(v -> showFunctionFilterDialog());
-        filterTimeChip.setOnClickListener(v -> showTimeRangeDialog());
 
         handler = new Handler(Looper.getMainLooper());
         refreshRunnable = new Runnable() {
@@ -139,8 +110,14 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         
-        if (id == R.id.action_clear) {
+        if (id == R.id.action_filter) {
+            showFilterDialog();
+            return true;
+        } else if (id == R.id.action_clear) {
             clearLogs();
+            return true;
+        } else if (id == R.id.action_export) {
+            exportLogs();
             return true;
         } else if (id == R.id.action_help) {
             showHelp();
@@ -195,7 +172,55 @@ public class MainActivity extends AppCompatActivity {
         return filtered;
     }
     
-    private void showPackageFilterDialog() {
+    private void showFilterDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Filter Logs");
+        
+        android.view.LayoutInflater inflater = getLayoutInflater();
+        android.view.View dialogView = inflater.inflate(R.layout.dialog_filter, null);
+        builder.setView(dialogView);
+        
+        // Get views from dialog
+        TextInputEditText dialogSearchEditText = dialogView.findViewById(R.id.dialogSearchEditText);
+        Chip dialogPackageChip = dialogView.findViewById(R.id.dialogFilterPackageChip);
+        Chip dialogFunctionChip = dialogView.findViewById(R.id.dialogFilterFunctionChip);
+        Chip dialogTimeChip = dialogView.findViewById(R.id.dialogFilterTimeChip);
+        
+        // Set current values
+        dialogSearchEditText.setText(searchQuery);
+        if (packageFilter != null) {
+            dialogPackageChip.setChecked(true);
+            dialogPackageChip.setText("Package: " + packageFilter.substring(packageFilter.lastIndexOf('.') + 1));
+        }
+        if (functionFilter != null) {
+            dialogFunctionChip.setChecked(true);
+            dialogFunctionChip.setText("Fn: " + functionFilter);
+        }
+        
+        // Set up chip click listeners
+        dialogPackageChip.setOnClickListener(v -> showPackageFilterDialogInner(dialogPackageChip));
+        dialogFunctionChip.setOnClickListener(v -> showFunctionFilterDialogInner(dialogFunctionChip));
+        dialogTimeChip.setOnClickListener(v -> showTimeRangeDialogInner(dialogTimeChip));
+        
+        builder.setPositiveButton("Apply", (dialog, which) -> {
+            searchQuery = dialogSearchEditText.getText().toString();
+            refreshLogs();
+        });
+        
+        builder.setNeutralButton("Clear All", (dialog, which) -> {
+            searchQuery = "";
+            packageFilter = null;
+            functionFilter = null;
+            timeRangeStart = 0;
+            timeRangeEnd = Long.MAX_VALUE;
+            refreshLogs();
+        });
+        
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+    
+    private void showPackageFilterDialogInner(Chip parentChip) {
         List<CallLogEntry> logs = CallLogger.getInstance().getLogs();
         Set<String> packages = new HashSet<>();
         for (CallLogEntry entry : logs) {
@@ -221,24 +246,22 @@ public class MainActivity extends AppCompatActivity {
         
         builder.setSingleChoiceItems(packageArray, selectedIndex, (dialog, which) -> {
             packageFilter = packageArray[which];
-            filterPackageChip.setChecked(true);
-            filterPackageChip.setText("Package: " + packageFilter.substring(packageFilter.lastIndexOf('.') + 1));
-            refreshLogs();
+            parentChip.setChecked(true);
+            parentChip.setText("Package: " + packageFilter.substring(packageFilter.lastIndexOf('.') + 1));
             dialog.dismiss();
         });
         
         builder.setNeutralButton("Clear", (dialog, which) -> {
             packageFilter = null;
-            filterPackageChip.setChecked(false);
-            filterPackageChip.setText("Package");
-            refreshLogs();
+            parentChip.setChecked(false);
+            parentChip.setText("Select Package");
         });
         
         builder.setNegativeButton("Cancel", null);
         builder.show();
     }
     
-    private void showFunctionFilterDialog() {
+    private void showFunctionFilterDialogInner(Chip parentChip) {
         List<CallLogEntry> logs = CallLogger.getInstance().getLogs();
         Set<String> functions = new HashSet<>();
         for (CallLogEntry entry : logs) {
@@ -262,24 +285,22 @@ public class MainActivity extends AppCompatActivity {
         
         builder.setSingleChoiceItems(functionArray, selectedIndex, (dialog, which) -> {
             functionFilter = functionArray[which];
-            filterFunctionChip.setChecked(true);
-            filterFunctionChip.setText("Fn: " + functionFilter);
-            refreshLogs();
+            parentChip.setChecked(true);
+            parentChip.setText("Fn: " + functionFilter);
             dialog.dismiss();
         });
         
         builder.setNeutralButton("Clear", (dialog, which) -> {
             functionFilter = null;
-            filterFunctionChip.setChecked(false);
-            filterFunctionChip.setText("Function");
-            refreshLogs();
+            parentChip.setChecked(false);
+            parentChip.setText("Select Function");
         });
         
         builder.setNegativeButton("Cancel", null);
         builder.show();
     }
     
-    private void showTimeRangeDialog() {
+    private void showTimeRangeDialogInner(Chip parentChip) {
         // Simple time range filter - last N seconds
         String[] options = {"Last 10 seconds", "Last 30 seconds", "Last minute", "Last 5 minutes", "All time"};
         long[] timeRanges = {10000, 30000, 60000, 300000, 0};
@@ -291,15 +312,14 @@ public class MainActivity extends AppCompatActivity {
             if (timeRanges[which] == 0) {
                 timeRangeStart = 0;
                 timeRangeEnd = Long.MAX_VALUE;
-                filterTimeChip.setChecked(false);
-                filterTimeChip.setText("Time Range");
+                parentChip.setChecked(false);
+                parentChip.setText("Select Time Range");
             } else {
                 timeRangeEnd = System.currentTimeMillis();
-                timeRangeStart = timeRangeEnd - timeRanges[which];
-                filterTimeChip.setChecked(true);
-                filterTimeChip.setText(options[which]);
+                timeRangeStart = timeRanges[which];
+                parentChip.setChecked(true);
+                parentChip.setText(options[which]);
             }
-            refreshLogs();
         });
         
         builder.setNegativeButton("Cancel", null);
@@ -312,21 +332,73 @@ public class MainActivity extends AppCompatActivity {
         
         // Reset filters
         searchQuery = "";
-        searchEditText.setText("");
         packageFilter = null;
         functionFilter = null;
         timeRangeStart = 0;
         timeRangeEnd = Long.MAX_VALUE;
         
-        filterPackageChip.setChecked(false);
-        filterPackageChip.setText("Package");
-        filterFunctionChip.setChecked(false);
-        filterFunctionChip.setText("Function");
-        filterTimeChip.setChecked(false);
-        filterTimeChip.setText("Time Range");
-        
         refreshLogs();
         Toast.makeText(this, "Logs cleared", Toast.LENGTH_SHORT).show();
+    }
+    
+    private void exportLogs() {
+        List<CallLogEntry> filteredLogs = filterLogs(CallLogger.getInstance().getLogs());
+        
+        if (filteredLogs.isEmpty()) {
+            Toast.makeText(this, "No logs to export", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Export as JSON
+        StringBuilder jsonBuilder = new StringBuilder();
+        jsonBuilder.append("[\n");
+        
+        for (int i = 0; i < filteredLogs.size(); i++) {
+            CallLogEntry entry = filteredLogs.get(i);
+            jsonBuilder.append("  {\n");
+            jsonBuilder.append("    \"timestamp\": \"").append(entry.getTimestamp()).append("\",\n");
+            jsonBuilder.append("    \"package\": \"").append(entry.getPackageName()).append("\",\n");
+            jsonBuilder.append("    \"function\": \"").append(entry.getFunctionName()).append("\",\n");
+            jsonBuilder.append("    \"type\": \"").append(entry.getType()).append("\"");
+            
+            if (entry.getApduInfo() != null) {
+                jsonBuilder.append(",\n");
+                jsonBuilder.append("    \"apdu_command\": \"").append(entry.getApduInfo().getCommand()).append("\",\n");
+                jsonBuilder.append("    \"apdu_response\": \"").append(entry.getApduInfo().getResponse()).append("\"");
+            }
+            
+            if (entry.getAid() != null) {
+                jsonBuilder.append(",\n");
+                jsonBuilder.append("    \"aid\": \"").append(entry.getAid()).append("\"");
+            }
+            
+            if (entry.getSelectResponse() != null) {
+                jsonBuilder.append(",\n");
+                jsonBuilder.append("    \"select_response\": \"").append(entry.getSelectResponse()).append("\"");
+            }
+            
+            if (entry.getDetails() != null) {
+                jsonBuilder.append(",\n");
+                jsonBuilder.append("    \"details\": \"").append(entry.getDetails()).append("\"");
+            }
+            
+            jsonBuilder.append("\n  }");
+            if (i < filteredLogs.size() - 1) {
+                jsonBuilder.append(",");
+            }
+            jsonBuilder.append("\n");
+        }
+        
+        jsonBuilder.append("]\n");
+        
+        // Share via Intent
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("application/json");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, jsonBuilder.toString());
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "OMAPI Stinks Export - " + filteredLogs.size() + " logs");
+        
+        Intent chooser = Intent.createChooser(shareIntent, "Export logs");
+        startActivity(chooser);
     }
     
     private void showHelp() {
