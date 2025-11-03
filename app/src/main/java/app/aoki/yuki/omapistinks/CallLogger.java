@@ -43,6 +43,21 @@ public class CallLogger {
             logs.remove(0);
         }
     }
+    
+    public synchronized void addStructuredLog(String packageName, String function, String type, 
+                                             String apduCommand, String apduResponse, 
+                                             String aid, String selectResponse, String details) {
+        String timestamp = dateFormat.format(new Date());
+        String shortTimestamp = shortDateFormat.format(new Date());
+        CallLogEntry entry = new CallLogEntry(timestamp, shortTimestamp, packageName, function, 
+                                             type, apduCommand, apduResponse, aid, selectResponse, details);
+        logs.add(entry);
+        
+        // Keep only the last MAX_LOGS entries
+        if (logs.size() > MAX_LOGS) {
+            logs.remove(0);
+        }
+    }
 
     public synchronized List<CallLogEntry> getLogs() {
         return new ArrayList<>(logs);
@@ -61,12 +76,19 @@ public class CallLogger {
         private final String details;
         private final boolean isTransmit;
         private final ApduInfo apduInfo;
+        private final String type;
+        private final String aid;
+        private final String selectResponse;
 
+        // Legacy constructor for text-based logs
         public CallLogEntry(String timestamp, String shortTimestamp, String message, String packageName) {
             this.timestamp = timestamp;
             this.shortTimestamp = shortTimestamp;
             this.message = message;
             this.packageName = packageName;
+            this.type = null;
+            this.aid = null;
+            this.selectResponse = null;
             
             // Parse function name and details
             ParsedInfo parsed = parseMessage(message);
@@ -74,6 +96,29 @@ public class CallLogger {
             this.details = parsed.details;
             this.isTransmit = parsed.isTransmit;
             this.apduInfo = parsed.apduInfo;
+        }
+        
+        // New constructor for structured logs
+        public CallLogEntry(String timestamp, String shortTimestamp, String packageName, String functionName,
+                           String type, String apduCommand, String apduResponse, 
+                           String aid, String selectResponse, String details) {
+            this.timestamp = timestamp;
+            this.shortTimestamp = shortTimestamp;
+            this.packageName = packageName;
+            this.functionName = shortenFunctionName(functionName);
+            this.type = type;
+            this.aid = aid;
+            this.selectResponse = selectResponse;
+            this.details = details;
+            this.message = null;
+            this.isTransmit = Constants.TYPE_TRANSMIT.equals(type);
+            
+            // Create ApduInfo from structured data
+            if (apduCommand != null || apduResponse != null) {
+                this.apduInfo = new ApduInfo(apduCommand, apduResponse);
+            } else {
+                this.apduInfo = null;
+            }
         }
 
         private static class ParsedInfo {
@@ -210,6 +255,18 @@ public class CallLogger {
 
         public ApduInfo getApduInfo() {
             return apduInfo;
+        }
+        
+        public String getType() {
+            return type;
+        }
+        
+        public String getAid() {
+            return aid;
+        }
+        
+        public String getSelectResponse() {
+            return selectResponse;
         }
 
         @Override

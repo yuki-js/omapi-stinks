@@ -178,10 +178,7 @@ public class MainActivity extends AppCompatActivity {
         
         adapter.setLogs(filteredLogs);
         
-        // Scroll to the bottom to show latest logs
-        if (filteredLogs.size() > 0) {
-            recyclerView.smoothScrollToPosition(filteredLogs.size() - 1);
-        }
+        // Don't auto-scroll - let user control their scroll position
         
         updateStatus();
     }

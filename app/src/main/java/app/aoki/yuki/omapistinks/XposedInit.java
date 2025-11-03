@@ -164,33 +164,51 @@ public class XposedInit implements IXposedHookLoadPackage {
             // Hook version with byte[] aid
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, new XC_MethodHook() {
                 @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     byte[] aid = (byte[]) param.args[0];
                     String aidHex = bytesToHex(aid);
-                    logMessage(logPrefix + "(aid=" + aidHex + ")");
-                }
-                
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     Object channel = param.getResult();
-                    logMessage(logPrefix + "() returned " + channel);
+                    
+                    // Get select response from channel
+                    String selectResponse = null;
+                    if (channel != null) {
+                        try {
+                            byte[] selectResp = (byte[]) XposedHelpers.callMethod(channel, "getSelectResponse");
+                            if (selectResp != null) {
+                                selectResponse = bytesToHex(selectResp);
+                            }
+                        } catch (Throwable t) {
+                            // getSelectResponse might not be available
+                        }
+                    }
+                    
+                    logStructuredOpenChannel(methodName, aidHex, selectResponse);
                 }
             });
             
             // Hook version with byte[] aid and byte P2
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, byte.class, new XC_MethodHook() {
                 @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     byte[] aid = (byte[]) param.args[0];
                     byte p2 = (byte) param.args[1];
                     String aidHex = bytesToHex(aid);
-                    logMessage(logPrefix + "(aid=" + aidHex + ", P2=0x" + String.format("%02X", p2) + ")");
-                }
-                
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     Object channel = param.getResult();
-                    logMessage(logPrefix + "() returned " + channel);
+                    
+                    // Get select response from channel
+                    String selectResponse = null;
+                    if (channel != null) {
+                        try {
+                            byte[] selectResp = (byte[]) XposedHelpers.callMethod(channel, "getSelectResponse");
+                            if (selectResp != null) {
+                                selectResponse = bytesToHex(selectResp);
+                            }
+                        } catch (Throwable t) {
+                            // getSelectResponse might not be available
+                        }
+                    }
+                    
+                    logStructuredOpenChannel(methodName + " P2=0x" + String.format("%02X", p2), aidHex, selectResponse);
                 }
             });
         } catch (Throwable t) {
@@ -202,20 +220,22 @@ public class XposedInit implements IXposedHookLoadPackage {
         try {
             Class<?> clazz = XposedHelpers.findClass(className, lpparam.classLoader);
             XposedHelpers.findAndHookMethod(clazz, "transmit", byte[].class, new XC_MethodHook() {
+                private String commandHex;
+                
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     byte[] command = (byte[]) param.args[0];
-                    String commandHex = bytesToHex(command);
-                    logMessage("Channel.transmit(command=" + commandHex + ")");
+                    commandHex = bytesToHex(command);
+                    // Don't send log yet - wait for response
                 }
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     byte[] response = (byte[]) param.getResult();
-                    if (response != null) {
-                        String responseHex = bytesToHex(response);
-                        logMessage("Channel.transmit() returned " + responseHex);
-                    }
+                    String responseHex = response != null ? bytesToHex(response) : null;
+                    
+                    // Send structured log with both command and response
+                    logStructuredTransmit(commandHex, responseHex);
                 }
             });
         } catch (Throwable t) {
@@ -253,6 +273,50 @@ public class XposedInit implements IXposedHookLoadPackage {
         } catch (Throwable t) {
             // Log error for debugging
             XposedBridge.log(TAG + ": Failed to send broadcast: " + t.getMessage());
+        }
+    }
+    
+    private void logStructuredTransmit(String commandHex, String responseHex) {
+        try {
+            XposedBridge.log(TAG + ": transmit(command=" + commandHex + ") -> " + responseHex);
+            
+            if (appContext != null) {
+                Intent intent = new Intent(Constants.BROADCAST_ACTION);
+                intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".LogReceiver");
+                intent.putExtra(Constants.EXTRA_TIMESTAMP, dateFormat.format(new Date()));
+                intent.putExtra(Constants.EXTRA_PACKAGE, currentPackageName);
+                intent.putExtra(Constants.EXTRA_FUNCTION, "Channel.transmit");
+                intent.putExtra(Constants.EXTRA_TYPE, Constants.TYPE_TRANSMIT);
+                intent.putExtra(Constants.EXTRA_APDU_COMMAND, commandHex);
+                intent.putExtra(Constants.EXTRA_APDU_RESPONSE, responseHex);
+                intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                
+                appContext.sendBroadcast(intent);
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": Error logging transmit: " + t.getMessage());
+        }
+    }
+    
+    private void logStructuredOpenChannel(String methodName, String aidHex, String selectResponse) {
+        try {
+            XposedBridge.log(TAG + ": " + methodName + "(aid=" + aidHex + ") selectResponse=" + selectResponse);
+            
+            if (appContext != null) {
+                Intent intent = new Intent(Constants.BROADCAST_ACTION);
+                intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".LogReceiver");
+                intent.putExtra(Constants.EXTRA_TIMESTAMP, dateFormat.format(new Date()));
+                intent.putExtra(Constants.EXTRA_PACKAGE, currentPackageName);
+                intent.putExtra(Constants.EXTRA_FUNCTION, methodName);
+                intent.putExtra(Constants.EXTRA_TYPE, Constants.TYPE_OPEN_CHANNEL);
+                intent.putExtra(Constants.EXTRA_AID, aidHex);
+                intent.putExtra(Constants.EXTRA_SELECT_RESPONSE, selectResponse);
+                intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                
+                appContext.sendBroadcast(intent);
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": Error logging open channel: " + t.getMessage());
         }
     }
     

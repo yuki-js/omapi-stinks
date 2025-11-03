@@ -30,7 +30,36 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
     public LogViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_log, parent, false);
-        return new LogViewHolder(view);
+        LogViewHolder holder = new LogViewHolder(view);
+        
+        // Set click listener on card
+        view.findViewById(R.id.logCard).setOnClickListener(v -> {
+            int position = holder.getAdapterPosition();
+            if (position != RecyclerView.NO_POSITION) {
+                openDetailActivity(parent.getContext(), logs.get(position));
+            }
+        });
+        
+        return holder;
+    }
+    
+    private void openDetailActivity(android.content.Context context, CallLogger.CallLogEntry entry) {
+        android.content.Intent intent = new android.content.Intent(context, LogDetailActivity.class);
+        intent.putExtra("timestamp", entry.getTimestamp());
+        intent.putExtra("packageName", entry.getPackageName());
+        intent.putExtra("function", entry.getFunctionName());
+        intent.putExtra("type", entry.getType());
+        
+        if (entry.getApduInfo() != null) {
+            intent.putExtra("apduCommand", entry.getApduInfo().getCommand());
+            intent.putExtra("apduResponse", entry.getApduInfo().getResponse());
+        }
+        
+        intent.putExtra("aid", entry.getAid());
+        intent.putExtra("selectResponse", entry.getSelectResponse());
+        intent.putExtra("details", entry.getDetails());
+        
+        context.startActivity(intent);
     }
 
     @Override
@@ -52,8 +81,30 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         // Set function name
         holder.functionText.setText(entry.getFunctionName());
         
-        // Set details
-        holder.detailsText.setText(entry.getDetails());
+        // For transmit: hide details text, only show APDU
+        // For open channel: show AID and select response
+        // For others: show details
+        if (entry.isTransmit()) {
+            holder.detailsText.setVisibility(View.GONE);
+        } else if (Constants.TYPE_OPEN_CHANNEL.equals(entry.getType())) {
+            // Show AID for open channel
+            String aid = entry.getAid();
+            if (aid != null && !aid.isEmpty()) {
+                holder.detailsText.setText("AID: " + aid);
+                holder.detailsText.setVisibility(View.VISIBLE);
+            } else {
+                holder.detailsText.setVisibility(View.GONE);
+            }
+        } else {
+            // Legacy text-based or other types
+            String details = entry.getDetails();
+            if (details != null && !details.isEmpty()) {
+                holder.detailsText.setText(details);
+                holder.detailsText.setVisibility(View.VISIBLE);
+            } else {
+                holder.detailsText.setVisibility(View.GONE);
+            }
+        }
         
         // Handle APDU display for transmit calls
         if (entry.isTransmit() && entry.getApduInfo() != null) {
@@ -71,6 +122,17 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
             if (apdu.getResponse() != null) {
                 holder.apduResponseLayout.setVisibility(View.VISIBLE);
                 holder.apduResponseText.setText(apdu.getFormattedResponse());
+            } else {
+                holder.apduResponseLayout.setVisibility(View.GONE);
+            }
+        } else if (Constants.TYPE_OPEN_CHANNEL.equals(entry.getType())) {
+            // For open channel, show select response as "response"
+            holder.apduCommandLayout.setVisibility(View.GONE);
+            
+            String selectResponse = entry.getSelectResponse();
+            if (selectResponse != null && !selectResponse.isEmpty()) {
+                holder.apduResponseLayout.setVisibility(View.VISIBLE);
+                holder.apduResponseText.setText(selectResponse);
             } else {
                 holder.apduResponseLayout.setVisibility(View.GONE);
             }

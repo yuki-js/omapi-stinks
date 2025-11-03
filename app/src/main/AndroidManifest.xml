@@ -17,6 +17,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".LogDetailActivity"
+            android:exported="false"
+            android:label="Log Detail"
+            android:parentActivityName=".MainActivity" />
+
         <!-- Persistent BroadcastReceiver - captures logs even when app is closed -->
         <!-- exported=true is required to receive broadcasts from other processes (Xposed hooks) -->
         <receiver
