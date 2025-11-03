@@ -19,17 +19,27 @@ public class LogReceiver extends BroadcastReceiver {
             Log.d(TAG, "onReceive called with action: " + intent.getAction());
             
             if (Constants.BROADCAST_ACTION.equals(intent.getAction())) {
-                String message = intent.getStringExtra(Constants.EXTRA_MESSAGE);
-                String timestamp = intent.getStringExtra(Constants.EXTRA_TIMESTAMP);
+                String packageName = intent.getStringExtra(Constants.EXTRA_PACKAGE);
+                String function = intent.getStringExtra(Constants.EXTRA_FUNCTION);
+                String type = intent.getStringExtra(Constants.EXTRA_TYPE);
                 
-                Log.d(TAG, "Received log: " + message);
-                
-                if (message != null && timestamp != null) {
-                    // Store in CallLogger (singleton, persists in memory)
-                    CallLogger.getInstance().addLog(timestamp + " | " + message);
-                    Log.d(TAG, "Log stored successfully. Total logs: " + CallLogger.getInstance().getLogs().size());
+                // Check if this is structured data
+                // All logs should now be structured
+                if (type != null) {
+                    String apduCommand = intent.getStringExtra(Constants.EXTRA_APDU_COMMAND);
+                    String apduResponse = intent.getStringExtra(Constants.EXTRA_APDU_RESPONSE);
+                    String aid = intent.getStringExtra(Constants.EXTRA_AID);
+                    String selectResponse = intent.getStringExtra(Constants.EXTRA_SELECT_RESPONSE);
+                    String details = intent.getStringExtra(Constants.EXTRA_DETAILS);
+                    
+                    Log.d(TAG, "Received structured log from " + packageName + ": " + function);
+                    
+                    CallLogger.getInstance().addStructuredLog(packageName, function, type, 
+                                                             apduCommand, apduResponse, 
+                                                             aid, selectResponse, details);
+                    Log.d(TAG, "Structured log stored. Total logs: " + CallLogger.getInstance().getLogs().size());
                 } else {
-                    Log.w(TAG, "Message or timestamp is null");
+                    Log.w(TAG, "Received log without type - ignoring");
                 }
             }
         } catch (Exception e) {

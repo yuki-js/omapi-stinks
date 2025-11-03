@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -19,6 +16,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".LogDetailActivity"
+            android:exported="false"
+            android:label="Log Detail"
+            android:parentActivityName=".MainActivity" />
 
         <!-- Persistent BroadcastReceiver - captures logs even when app is closed -->
         <!-- exported=true is required to receive broadcasts from other processes (Xposed hooks) -->

@@ -1,24 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- LSPosed Scope: Suggested packages to hook -->
+    <!-- LSPosed Scope: Recommended packages to hook for OMAPI monitoring
+         Note: The module will hook OMAPI calls in ANY app added to scope.
+         These are just recommended/essential packages for typical usage.
+         
+         REQUIRED for functionality:
+         - android (Android Framework - contains OMAPI implementation)
+         - com.android.se (SecureElement system service)
+         
+         Add any app you want to monitor to the scope list in LSPosed.
+    -->
     <string-array name="xposed_scope">
-        <!-- System Framework - Core OMAPI implementation -->
+        <!-- REQUIRED: Android Framework - Core OMAPI implementation -->
         <item>android</item>
         
-        <!-- System SE Service -->
+        <!-- REQUIRED: System SE Service -->
         <item>com.android.se</item>
         
-        <!-- Google Services that may use OMAPI -->
+        <!-- Optional: Common apps that use OMAPI -->
+        <!-- Google Services -->
         <item>com.google.android.gms</item>
         <item>com.google.android.gsf</item>
         
-        <!-- Common payment apps -->
+        <!-- Payment apps -->
         <item>com.google.android.apps.walletnfcrel</item>
         <item>com.samsung.android.spay</item>
         
         <!-- SIM Toolkit -->
         <item>com.android.stk</item>
         
-        <!-- Add more apps as needed -->
+        <!-- Felica (Japanese mobile payment/transit apps) -->
+        <item>com.felicanetworks.mfm.main</item>
+        <item>com.felicanetworks.mfc</item>
+        <item>com.felicanetworks.mfw.a.main</item>
+        <item>com.felicanetworks.mfw.a.boot</item>
+        <item>com.felicanetworks.mfs</item>
+        
+        <!-- Add any other apps you want to monitor here -->
     </string-array>
 </resources>
