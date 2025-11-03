@@ -31,13 +31,11 @@ public class XposedInit implements IXposedHookLoadPackage {
         // Hook system SecureElement service
         if (lpparam.packageName.equals("com.android.se")) {
             hookSystemService(lpparam);
-            return;
         }
         
-        // Hook client-side OMAPI (apps using OMAPI)
-        if (shouldHookPackage(lpparam.packageName)) {
-            hookClientOmapi(lpparam);
-        }
+        // Hook client-side OMAPI for ALL packages (no whitelist)
+        // This allows hooking any app that uses OMAPI
+        hookClientOmapi(lpparam);
     }
     
     private void hookApplicationContext(LoadPackageParam lpparam) {
@@ -56,31 +54,8 @@ public class XposedInit implements IXposedHookLoadPackage {
         }
     }
     
-    private boolean shouldHookPackage(String packageName) {
-        // Hook android framework
-        if (packageName.equals("android")) {
-            return true;
-        }
-        
-        // Hook common OMAPI-using packages
-        return packageName.contains("wallet") || 
-               packageName.contains("pay") || 
-               packageName.contains("nfc") ||
-               packageName.contains("felica") ||
-               packageName.equals("com.google.android.gms") ||
-               packageName.equals("com.google.android.gsf") ||
-               packageName.equals("com.google.android.apps.walletnfcrel") ||
-               packageName.equals("com.samsung.android.spay") ||
-               packageName.equals("com.android.stk") ||
-               packageName.equals("com.felicanetworks.mfm.main") ||
-               packageName.equals("com.felicanetworks.mfc") ||
-               packageName.equals("com.felicanetworks.mfw.a.main") ||
-               packageName.equals("com.felicanetworks.mfw.a.boot") ||
-               packageName.equals("com.felicanetworks.mfs");
-    }
-    
     private void hookClientOmapi(LoadPackageParam lpparam) {
-        // Hook modern android.se.omapi package
+        // Hook modern android.se.omapi package (Android 9+)
         hookOmapiPackage(lpparam, "android.se.omapi");
         
         // Hook legacy org.simalliance.openmobileapi package

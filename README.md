@@ -99,13 +99,19 @@ The module:
 
 ## Supported Packages
 
-The module automatically hooks these OMAPI packages:
+**The module hooks OMAPI calls in ANY app you add to the LSPosed scope!**
+
+The module automatically hooks these OMAPI packages wherever they exist:
 - `android.se.omapi.*` (Android 9+)
 - `org.simalliance.openmobileapi.*` (Legacy)
 
-Pre-configured scope suggestions include:
-- `android` (system framework)
-- `com.android.se` (SecureElement service)
+### Required Scope Entries
+These MUST be enabled for the module to work:
+- ✅ **`android`** (system framework - contains OMAPI implementation)
+- ✅ **`com.android.se`** (SecureElement service - handles APDU transmission)
+
+### Optional Scope Suggestions
+Pre-configured recommendations for common OMAPI-using apps:
 - `com.google.android.gms` (Google Play Services)
 - `com.google.android.apps.walletnfcrel` (Google Wallet)
 - `com.samsung.android.spay` (Samsung Pay)
@@ -115,6 +121,8 @@ Pre-configured scope suggestions include:
 - `com.felicanetworks.mfw.a.main` (Mobile Felica Web Plugin)
 - `com.felicanetworks.mfw.a.boot` (Mobile Felica Web Boot)
 - `com.felicanetworks.mfs` (Mobile Felica Service)
+
+**Add ANY app you want to monitor to the scope!** The module will hook OMAPI calls in any package.
 
 ## Verification & Troubleshooting
 
