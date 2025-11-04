@@ -47,6 +47,7 @@ public class LogDetailActivity extends AppCompatActivity {
         String threadName = getIntent().getStringExtra("threadName");
         int processId = getIntent().getIntExtra("processId", 0);
         long executionTimeMs = getIntent().getLongExtra("executionTimeMs", 0);
+        String stackTrace = getIntent().getStringExtra("stackTrace");
 
         // Get views
         TextView timestampView = findViewById(R.id.detailTimestamp);
@@ -58,6 +59,7 @@ public class LogDetailActivity extends AppCompatActivity {
         TextView apduResponseView = findViewById(R.id.detailApduResponse);
         TextView selectResponseView = findViewById(R.id.detailSelectResponse);
         TextView detailsView = findViewById(R.id.detailDetails);
+        TextView stackTraceView = findViewById(R.id.detailStackTrace);
 
         // Get cards
         MaterialCardView cardApduCommand = findViewById(R.id.cardApduCommand);
@@ -65,12 +67,14 @@ public class LogDetailActivity extends AppCompatActivity {
         MaterialCardView cardAid = findViewById(R.id.cardAid);
         MaterialCardView cardSelectResponse = findViewById(R.id.cardSelectResponse);
         MaterialCardView cardDetails = findViewById(R.id.cardDetails);
+        MaterialCardView cardStackTrace = findViewById(R.id.cardStackTrace);
 
         // Get copy buttons
         MaterialButton btnCopyCommand = findViewById(R.id.btnCopyCommand);
         MaterialButton btnCopyResponse = findViewById(R.id.btnCopyResponse);
         MaterialButton btnCopyAid = findViewById(R.id.btnCopyAid);
         MaterialButton btnCopySelectResponse = findViewById(R.id.btnCopySelectResponse);
+        MaterialButton btnCopyStackTrace = findViewById(R.id.btnCopyStackTrace);
 
         // Set basic info
         timestampView.setText("⏱ " + (timestamp != null ? timestamp : "N/A"));
@@ -98,6 +102,7 @@ public class LogDetailActivity extends AppCompatActivity {
         cardAid.setVisibility(View.GONE);
         cardSelectResponse.setVisibility(View.GONE);
         cardDetails.setVisibility(View.GONE);
+        cardStackTrace.setVisibility(View.GONE);
 
         // Show relevant cards based on type
         if (Constants.TYPE_TRANSMIT.equals(type)) {
@@ -127,6 +132,13 @@ public class LogDetailActivity extends AppCompatActivity {
                 cardDetails.setVisibility(View.VISIBLE);
                 detailsView.setText(details);
             }
+        }
+        
+        // Show stack trace if available
+        if (stackTrace != null && !stackTrace.isEmpty()) {
+            cardStackTrace.setVisibility(View.VISIBLE);
+            stackTraceView.setText(stackTrace);
+            btnCopyStackTrace.setOnClickListener(v -> copyToClipboard("Call Stack", stackTrace));
         }
     }
 

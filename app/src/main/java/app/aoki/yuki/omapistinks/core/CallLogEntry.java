@@ -23,6 +23,7 @@ public class CallLogEntry {
     private final int processId;
     private final long executionTimeMs;
     private final String error;
+    private final String stackTrace;
 
     private CallLogEntry(Builder builder) {
         this.timestamp = builder.timestamp;
@@ -40,6 +41,7 @@ public class CallLogEntry {
         this.processId = builder.processId;
         this.executionTimeMs = builder.executionTimeMs;
         this.error = builder.error;
+        this.stackTrace = builder.stackTrace;
     }
 
     /**
@@ -120,6 +122,7 @@ public class CallLogEntry {
         private int processId;
         private long executionTimeMs;
         private String error;
+        private String stackTrace;
 
         public Builder() {
             // Automatically capture thread and process info
@@ -134,6 +137,26 @@ public class CallLogEntry {
             Date now = new Date();
             this.timestamp = dateFormat.format(now);
             this.shortTimestamp = shortFormat.format(now);
+            
+            // Capture call stack
+            this.stackTrace = captureStackTrace();
+        }
+        
+        /**
+         * Captures the current call stack as a formatted string
+         */
+        private String captureStackTrace() {
+            StringBuilder sb = new StringBuilder();
+            StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+            
+            // Skip the first few frames (getStackTrace, captureStackTrace, Builder constructor)
+            // Start from frame 4 to show the actual caller context
+            for (int i = 4; i < elements.length && i < 24; i++) { // Limit to 20 frames
+                StackTraceElement element = elements[i];
+                sb.append("  at ").append(element.toString()).append("\n");
+            }
+            
+            return sb.toString();
         }
 
         public Builder packageName(String packageName) {
@@ -256,6 +279,10 @@ public class CallLogEntry {
 
     public boolean hasError() {
         return error != null && !error.isEmpty();
+    }
+
+    public String getStackTrace() {
+        return stackTrace;
     }
 
     // Legacy compatibility - getMessage() is not used for structured entries

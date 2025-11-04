@@ -52,7 +52,8 @@ public class CsvExporter {
                .append("APDU Response,")
                .append("AID,")
                .append("Select Response,")
-               .append("Details")
+               .append("Details,")
+               .append("Call Stack")
                .append("\n");
     }
     
@@ -77,10 +78,11 @@ public class CsvExporter {
             builder.append(",,");
         }
         
-        // AID, Select Response, Details
+        // AID, Select Response, Details, Stack Trace
         builder.append(escapeCsv(entry.getAid())).append(",");
         builder.append(escapeCsv(entry.getSelectResponse())).append(",");
-        builder.append(escapeCsv(entry.getDetails()));
+        builder.append(escapeCsv(entry.getDetails())).append(",");
+        builder.append(escapeCsv(entry.getStackTrace()));
         builder.append("\n");
     }
     
