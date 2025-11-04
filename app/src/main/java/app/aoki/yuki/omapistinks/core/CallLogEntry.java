@@ -59,10 +59,70 @@ public class CallLogEntry {
         int maxFrames = STACK_FRAME_SKIP + MAX_STACK_FRAMES;
         for (int i = STACK_FRAME_SKIP; i < elements.length && i < maxFrames; i++) {
             StackTraceElement element = elements[i];
-            sb.append("  at ").append(element.toString()).append("\n");
+            sb.append(formatStackTraceElement(element, i)).append("\n");
         }
         
         return sb.toString();
+    }
+    
+    /**
+     * Formats a single stack trace element for beautiful display
+     */
+    private static String formatStackTraceElement(StackTraceElement element, int index) {
+        String className = element.getClassName();
+        String methodName = element.getMethodName();
+        String fileName = element.getFileName();
+        int lineNumber = element.getLineNumber();
+        
+        // Determine if this is application code (not system/framework)
+        boolean isAppCode = !className.startsWith("java.") && 
+                           !className.startsWith("android.") &&
+                           !className.startsWith("dalvik.") &&
+                           !className.startsWith("com.android.internal.") &&
+                           !className.startsWith("libcore.");
+        
+        // Format: index. ClassName.methodName (FileName:line)
+        StringBuilder formatted = new StringBuilder();
+        formatted.append(String.format("%2d. ", index));
+        
+        // Shorten class name for readability - keep only last two segments
+        String shortClassName = shortenClassName(className);
+        
+        if (isAppCode) {
+            // Highlight application code with marker
+            formatted.append("▸ ");
+        } else {
+            formatted.append("  ");
+        }
+        
+        formatted.append(shortClassName).append(".");
+        formatted.append(methodName);
+        
+        // Add file and line info if available
+        if (fileName != null) {
+            formatted.append(" (").append(fileName);
+            if (lineNumber > 0) {
+                formatted.append(":").append(lineNumber);
+            }
+            formatted.append(")");
+        } else if (element.isNativeMethod()) {
+            formatted.append(" (Native)");
+        }
+        
+        return formatted.toString();
+    }
+    
+    /**
+     * Shortens class name for readability
+     * Example: "com.example.app.MyClass" -> "app.MyClass"
+     */
+    private static String shortenClassName(String className) {
+        String[] parts = className.split("\\.");
+        if (parts.length <= 2) {
+            return className;
+        }
+        // Return last two parts
+        return parts[parts.length - 2] + "." + parts[parts.length - 1];
     }
 
     /**

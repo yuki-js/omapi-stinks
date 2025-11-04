@@ -370,7 +370,7 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="4dp">
 
                         <TextView
                             android:layout_width="0dp"
@@ -392,17 +392,35 @@
                             android:minHeight="36dp" />
 
                     </LinearLayout>
-
+                    
                     <TextView
-                        android:id="@+id/detailStackTrace"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Stack trace:"
-                        android:textSize="12sp"
-                        android:fontFamily="monospace"
-                        android:textIsSelectable="true"
-                        android:maxLines="20"
-                        android:scrollbars="vertical" />
+                        android:text="▸ marks application code"
+                        android:textSize="11sp"
+                        android:textColor="#757575"
+                        android:layout_marginBottom="8dp" />
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxHeight="400dp"
+                        android:scrollbars="vertical"
+                        android:background="#F5F5F5"
+                        android:padding="8dp">
+                        
+                        <TextView
+                            android:id="@+id/detailStackTrace"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Stack trace:"
+                            android:textSize="11sp"
+                            android:fontFamily="monospace"
+                            android:textIsSelectable="true"
+                            android:lineSpacingExtra="2dp"
+                            android:textColor="#212121" />
+                    
+                    </ScrollView>
 
                 </LinearLayout>
 
