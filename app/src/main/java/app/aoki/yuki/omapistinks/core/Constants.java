@@ -1,4 +1,4 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.core;
 
 /**
  * Shared constants used across the app and Xposed module
@@ -23,6 +23,7 @@ public class Constants {
     public static final String EXTRA_THREAD_NAME = "threadName";
     public static final String EXTRA_PROCESS_ID = "processId";
     public static final String EXTRA_EXECUTION_TIME_MS = "executionTimeMs";
+    public static final String EXTRA_ERROR = "error";
     
     // Package name for intent targeting
     public static final String PACKAGE_NAME = "app.aoki.yuki.omapistinks";

@@ -1,4 +1,4 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.core;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -47,12 +47,28 @@ public class CallLogger {
     public synchronized void addStructuredLog(String packageName, String function, String type, 
                                              String apduCommand, String apduResponse, 
                                              String aid, String selectResponse, String details,
-                                             long threadId, String threadName, int processId, long executionTimeMs) {
+                                             long threadId, String threadName, int processId, long executionTimeMs,
+                                             String error) {
         String timestamp = dateFormat.format(new Date());
         String shortTimestamp = shortDateFormat.format(new Date());
-        CallLogEntry entry = new CallLogEntry(timestamp, shortTimestamp, packageName, function, 
-                                             type, apduCommand, apduResponse, aid, selectResponse, details,
-                                             threadId, threadName, processId, executionTimeMs);
+        
+        // Use Builder to create entry with all fields
+        CallLogEntry.Builder builder = new CallLogEntry.Builder()
+            .packageName(packageName)
+            .functionName(function)
+            .type(type)
+            .apduCommand(apduCommand)
+            .apduResponse(apduResponse)
+            .aid(aid)
+            .selectResponse(selectResponse)
+            .details(details)
+            .executionTimeMs(executionTimeMs);
+        
+        if (error != null && !error.isEmpty()) {
+            builder.error(error);
+        }
+        
+        CallLogEntry entry = builder.build();
         addLog(entry);
     }
 

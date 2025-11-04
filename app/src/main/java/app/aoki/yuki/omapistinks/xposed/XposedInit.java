@@ -1,4 +1,4 @@
-package app.aoki.yuki.omapistinks;
+package app.aoki.yuki.omapistinks.xposed;
 
 import android.content.Context;
 
@@ -7,9 +7,11 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
-import app.aoki.yuki.omapistinks.hooks.ChannelTransmitHook;
-import app.aoki.yuki.omapistinks.hooks.SessionOpenChannelHook;
-import app.aoki.yuki.omapistinks.hooks.TerminalTransmitHook;
+import app.aoki.yuki.omapistinks.core.CallLogEntry;
+import app.aoki.yuki.omapistinks.core.Constants;
+import app.aoki.yuki.omapistinks.xposed.hooks.ChannelTransmitHook;
+import app.aoki.yuki.omapistinks.xposed.hooks.SessionOpenChannelHook;
+import app.aoki.yuki.omapistinks.xposed.hooks.TerminalTransmitHook;
 
 /**
  * Xposed Module entry point for hooking OMAPI calls
@@ -25,8 +27,18 @@ public class XposedInit implements IXposedHookLoadPackage {
         // Hook Application.attach to get context for broadcasting
         hookApplicationContext(lpparam);
         
-        // Initialize broadcaster (will be set after context is available)
-        broadcaster = new LogBroadcaster(appContext, lpparam.packageName);
+        // Provide a ContextProvider that resolves context lazily
+        // This allows the broadcaster to work even when context is initially null
+        ContextProvider provider = new ContextProvider() {
+            @Override
+            public Context getContext() {
+                // Return the hooked context (may be null initially, but will be set later)
+                return appContext;
+            }
+        };
+        
+        // Initialize broadcaster with provider (will resolve context lazily)
+        broadcaster = new LogBroadcaster(provider, lpparam.packageName);
         
         // Hook system SecureElement service
         if (lpparam.packageName.equals("com.android.se")) {
@@ -44,9 +56,31 @@ public class XposedInit implements IXposedHookLoadPackage {
                     "attach", Context.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    appContext = (Context) param.args[0];
-                    // Update broadcaster with context
-                    broadcaster = new LogBroadcaster(appContext, lpparam.packageName);
+                    try {
+                        appContext = (Context) param.args[0];
+                        // No need to recreate broadcaster; provider reads appContext lazily
+                        
+                        // Log the hook notification (broadcaster will use the updated appContext)
+                        if (broadcaster != null) {
+                            CallLogEntry hookEntry = CallLogEntry.createHookEntry(
+                                lpparam.packageName,
+                                "Application.attach",
+                                "OMAPI hooks installed for package: " + lpparam.packageName
+                            );
+                            broadcaster.logMessage(hookEntry);
+                        }
+                    } catch (Throwable t) {
+                        // Log error if something went wrong in the hook
+                        if (broadcaster != null) {
+                            CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                                lpparam.packageName,
+                                "Application.attach",
+                                Constants.TYPE_OTHER,
+                                "Error in attach hook: " + t.getMessage()
+                            );
+                            broadcaster.logMessage(errorEntry);
+                        }
+                    }
                 }
             });
         } catch (Throwable t) {
