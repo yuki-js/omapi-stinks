@@ -15,21 +15,28 @@ import java.util.Locale;
 
 /**
  * Handles broadcasting structured log data to the UI app
+ * Uses ContextProvider for lazy context resolution with fallback support
  */
 public class LogBroadcaster {
     private static final String TAG = "OmapiStinks";
-    private final Context appContext;
+    private final ContextProvider contextProvider;
     private final String packageName;
     private final SimpleDateFormat dateFormat;
 
-    public LogBroadcaster(Context appContext, String packageName) {
-        this.appContext = appContext;
+    /**
+     * Constructor using ContextProvider for lazy context resolution
+     * @param contextProvider Provider that resolves context lazily with fallback strategies
+     * @param packageName Package name for logging
+     */
+    public LogBroadcaster(ContextProvider contextProvider, String packageName) {
+        this.contextProvider = contextProvider;
         this.packageName = packageName;
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
     }
 
     /**
      * Send a structured log entry via broadcast
+     * Context is resolved lazily each time to handle cases where context becomes available later
      */
     public void logMessage(CallLogEntry entry) {
         try {
@@ -39,9 +46,17 @@ public class LogBroadcaster {
             }
             XposedBridge.log(logMsg);
             
-            if (appContext != null) {
+            // Resolve context lazily each time we send
+            Context ctx = null;
+            try {
+                ctx = contextProvider.getContext();
+            } catch (Throwable t) {
+                XposedBridge.log(TAG + ": Error obtaining context from ContextProvider: " + t);
+            }
+            
+            if (ctx != null) {
                 Intent intent = new Intent(Constants.BROADCAST_ACTION);
-                intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".LogReceiver");
+                intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".core.LogReceiver");
                 intent.putExtra(Constants.EXTRA_TIMESTAMP, entry.getTimestamp());
                 intent.putExtra(Constants.EXTRA_PACKAGE, entry.getPackageName());
                 intent.putExtra(Constants.EXTRA_FUNCTION, entry.getFunctionName());
@@ -62,7 +77,9 @@ public class LogBroadcaster {
                 intent.putExtra(Constants.EXTRA_ERROR, entry.getError());
                 intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
                 
-                appContext.sendBroadcast(intent);
+                ctx.sendBroadcast(intent);
+            } else {
+                XposedBridge.log(TAG + ": Context is null; skipping broadcast for " + entry.getFunctionName());
             }
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": Error broadcasting log: " + t.getMessage());

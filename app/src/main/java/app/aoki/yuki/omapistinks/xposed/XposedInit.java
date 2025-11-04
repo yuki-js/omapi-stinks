@@ -27,8 +27,18 @@ public class XposedInit implements IXposedHookLoadPackage {
         // Hook Application.attach to get context for broadcasting
         hookApplicationContext(lpparam);
         
-        // Initialize broadcaster (will be set after context is available)
-        broadcaster = new LogBroadcaster(appContext, lpparam.packageName);
+        // Provide a ContextProvider that resolves context lazily
+        // This allows the broadcaster to work even when context is initially null
+        ContextProvider provider = new ContextProvider() {
+            @Override
+            public Context getContext() {
+                // Return the hooked context (may be null initially, but will be set later)
+                return appContext;
+            }
+        };
+        
+        // Initialize broadcaster with provider (will resolve context lazily)
+        broadcaster = new LogBroadcaster(provider, lpparam.packageName);
         
         // Hook system SecureElement service
         if (lpparam.packageName.equals("com.android.se")) {
@@ -48,16 +58,17 @@ public class XposedInit implements IXposedHookLoadPackage {
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     try {
                         appContext = (Context) param.args[0];
-                        // Update broadcaster with context
-                        broadcaster = new LogBroadcaster(appContext, lpparam.packageName);
+                        // No need to recreate broadcaster; provider reads appContext lazily
                         
-                        // Log the hook notification
-                        CallLogEntry hookEntry = CallLogEntry.createHookEntry(
-                            lpparam.packageName,
-                            "Application.attach",
-                            "OMAPI hooks installed for package: " + lpparam.packageName
-                        );
-                        broadcaster.logMessage(hookEntry);
+                        // Log the hook notification (broadcaster will use the updated appContext)
+                        if (broadcaster != null) {
+                            CallLogEntry hookEntry = CallLogEntry.createHookEntry(
+                                lpparam.packageName,
+                                "Application.attach",
+                                "OMAPI hooks installed for package: " + lpparam.packageName
+                            );
+                            broadcaster.logMessage(hookEntry);
+                        }
                     } catch (Throwable t) {
                         // Log error if something went wrong in the hook
                         if (broadcaster != null) {
