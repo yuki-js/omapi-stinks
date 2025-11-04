@@ -8,6 +8,8 @@ import java.util.Locale;
  * Represents a single OMAPI call log entry with structured data
  */
 public class CallLogEntry {
+    private static final int MAX_STACK_FRAMES = 20;
+    
     private final String timestamp;
     private final String shortTimestamp;
     private final String packageName;
@@ -151,7 +153,8 @@ public class CallLogEntry {
             
             // Skip the first few frames (getStackTrace, captureStackTrace, Builder constructor)
             // Start from frame 4 to show the actual caller context
-            for (int i = 4; i < elements.length && i < 24; i++) { // Limit to 20 frames
+            int maxFrames = 4 + MAX_STACK_FRAMES;
+            for (int i = 4; i < elements.length && i < maxFrames; i++) {
                 StackTraceElement element = elements[i];
                 sb.append("  at ").append(element.toString()).append("\n");
             }
