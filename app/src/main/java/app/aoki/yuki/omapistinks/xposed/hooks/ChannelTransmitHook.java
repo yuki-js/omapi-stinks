@@ -17,22 +17,27 @@ public class ChannelTransmitHook {
         try {
             Class<?> clazz = XposedHelpers.findClass(className, lpparam.classLoader);
             XposedHelpers.findAndHookMethod(clazz, "transmit", byte[].class, new XC_MethodHook() {
-                private String commandHex;
-                private long startTime;
-                private String callStack;
-                
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     byte[] command = (byte[]) param.args[0];
-                    commandHex = LogBroadcaster.bytesToHex(command);
-                    startTime = System.currentTimeMillis();
-                    // Capture call stack from the hooked method context
-                    callStack = CallLogEntry.captureCallStack();
+                    String commandHex = LogBroadcaster.bytesToHex(command);
+                    long startTime = System.currentTimeMillis();
+                    String callStack = CallLogEntry.captureCallStack();
+                    
+                    // Store values in param extras to avoid race conditions
+                    param.setObjectExtra("commandHex", commandHex);
+                    param.setObjectExtra("startTime", startTime);
+                    param.setObjectExtra("callStack", callStack);
                 }
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     try {
+                        // Retrieve values from param extras (thread-safe)
+                        String commandHex = (String) param.getObjectExtra("commandHex");
+                        long startTime = (Long) param.getObjectExtra("startTime");
+                        String callStack = (String) param.getObjectExtra("callStack");
+                        
                         long executionTime = System.currentTimeMillis() - startTime;
                         byte[] response = (byte[]) param.getResult();
                         String responseHex = response != null ? LogBroadcaster.bytesToHex(response) : null;
@@ -51,12 +56,14 @@ public class ChannelTransmitHook {
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
                         // Log error if something went wrong
-                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
-                            lpparam.packageName,
-                            "Channel.transmit",
-                            Constants.TYPE_TRANSMIT,
-                            "Error logging transmit: " + t.getMessage()
-                        );
+                        String callStack = (String) param.getObjectExtra("callStack");
+                        CallLogEntry errorEntry = new CallLogEntry.Builder()
+                            .packageName(lpparam.packageName)
+                            .functionName("Channel.transmit")
+                            .type(Constants.TYPE_TRANSMIT)
+                            .error("Error logging transmit: " + t.getMessage())
+                            .stackTrace(callStack)
+                            .build();
                         broadcaster.logMessage(errorEntry);
                     }
                 }

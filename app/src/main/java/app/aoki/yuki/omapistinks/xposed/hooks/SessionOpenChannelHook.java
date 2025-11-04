@@ -27,19 +27,23 @@ public class SessionOpenChannelHook {
             
             // Hook version with byte[] aid
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, new XC_MethodHook() {
-                private long startTime;
-                private String callStack;
-                
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    startTime = System.currentTimeMillis();
-                    // Capture call stack from the hooked method context
-                    callStack = CallLogEntry.captureCallStack();
+                    long startTime = System.currentTimeMillis();
+                    String callStack = CallLogEntry.captureCallStack();
+                    
+                    // Store values in param extras to avoid race conditions
+                    param.setObjectExtra("startTime", startTime);
+                    param.setObjectExtra("callStack", callStack);
                 }
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     try {
+                        // Retrieve values from param extras (thread-safe)
+                        long startTime = (Long) param.getObjectExtra("startTime");
+                        String callStack = (String) param.getObjectExtra("callStack");
+                        
                         long executionTime = System.currentTimeMillis() - startTime;
                         byte[] aid = (byte[]) param.args[0];
                         String aidHex = LogBroadcaster.bytesToHex(aid);
@@ -61,12 +65,14 @@ public class SessionOpenChannelHook {
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
                         // Log error if something went wrong
-                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
-                            lpparam.packageName,
-                            "Session." + methodName,
-                            Constants.TYPE_OPEN_CHANNEL,
-                            "Error logging open channel: " + t.getMessage()
-                        );
+                        String callStack = (String) param.getObjectExtra("callStack");
+                        CallLogEntry errorEntry = new CallLogEntry.Builder()
+                            .packageName(lpparam.packageName)
+                            .functionName("Session." + methodName)
+                            .type(Constants.TYPE_OPEN_CHANNEL)
+                            .error("Error logging open channel: " + t.getMessage())
+                            .stackTrace(callStack)
+                            .build();
                         broadcaster.logMessage(errorEntry);
                     }
                 }
@@ -74,19 +80,23 @@ public class SessionOpenChannelHook {
             
             // Hook version with byte[] aid and byte P2
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, byte.class, new XC_MethodHook() {
-                private long startTime;
-                private String callStack;
-                
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    startTime = System.currentTimeMillis();
-                    // Capture call stack from the hooked method context
-                    callStack = CallLogEntry.captureCallStack();
+                    long startTime = System.currentTimeMillis();
+                    String callStack = CallLogEntry.captureCallStack();
+                    
+                    // Store values in param extras to avoid race conditions
+                    param.setObjectExtra("startTime", startTime);
+                    param.setObjectExtra("callStack", callStack);
                 }
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     try {
+                        // Retrieve values from param extras (thread-safe)
+                        long startTime = (Long) param.getObjectExtra("startTime");
+                        String callStack = (String) param.getObjectExtra("callStack");
+                        
                         long executionTime = System.currentTimeMillis() - startTime;
                         byte[] aid = (byte[]) param.args[0];
                         byte p2 = (byte) param.args[1];
@@ -109,12 +119,14 @@ public class SessionOpenChannelHook {
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
                         // Log error if something went wrong
-                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
-                            lpparam.packageName,
-                            "Session." + methodName,
-                            Constants.TYPE_OPEN_CHANNEL,
-                            "Error logging open channel: " + t.getMessage()
-                        );
+                        String callStack = (String) param.getObjectExtra("callStack");
+                        CallLogEntry errorEntry = new CallLogEntry.Builder()
+                            .packageName(lpparam.packageName)
+                            .functionName("Session." + methodName)
+                            .type(Constants.TYPE_OPEN_CHANNEL)
+                            .error("Error logging open channel: " + t.getMessage())
+                            .stackTrace(callStack)
+                            .build();
                         broadcaster.logMessage(errorEntry);
                     }
                 }
