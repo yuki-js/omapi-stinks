@@ -19,12 +19,15 @@ public class ChannelTransmitHook {
             XposedHelpers.findAndHookMethod(clazz, "transmit", byte[].class, new XC_MethodHook() {
                 private String commandHex;
                 private long startTime;
+                private String callStack;
                 
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     byte[] command = (byte[]) param.args[0];
                     commandHex = LogBroadcaster.bytesToHex(command);
                     startTime = System.currentTimeMillis();
+                    // Capture call stack from the hooked method context
+                    callStack = CallLogEntry.captureCallStack();
                 }
                 
                 @Override
@@ -34,14 +37,16 @@ public class ChannelTransmitHook {
                         byte[] response = (byte[]) param.getResult();
                         String responseHex = response != null ? LogBroadcaster.bytesToHex(response) : null;
                         
-                        // Create structured log entry using factory method
-                        CallLogEntry entry = CallLogEntry.createTransmitEntry(
-                            lpparam.packageName,
-                            "Channel.transmit",
-                            commandHex,
-                            responseHex,
-                            executionTime
-                        );
+                        // Create structured log entry with call stack
+                        CallLogEntry entry = new CallLogEntry.Builder()
+                            .packageName(lpparam.packageName)
+                            .functionName("Channel.transmit")
+                            .type(Constants.TYPE_TRANSMIT)
+                            .apduCommand(commandHex)
+                            .apduResponse(responseHex)
+                            .executionTimeMs(executionTime)
+                            .stackTrace(callStack)
+                            .build();
                         
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {

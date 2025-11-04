@@ -28,10 +28,13 @@ public class SessionOpenChannelHook {
             // Hook version with byte[] aid
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, new XC_MethodHook() {
                 private long startTime;
+                private String callStack;
                 
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     startTime = System.currentTimeMillis();
+                    // Capture call stack from the hooked method context
+                    callStack = CallLogEntry.captureCallStack();
                 }
                 
                 @Override
@@ -45,13 +48,15 @@ public class SessionOpenChannelHook {
                         // Get select response from channel
                         String selectResponse = extractSelectResponse(channel);
                         
-                        CallLogEntry entry = CallLogEntry.createOpenChannelEntry(
-                            lpparam.packageName,
-                            "Session." + methodName,
-                            aidHex,
-                            selectResponse,
-                            executionTime
-                        );
+                        CallLogEntry entry = new CallLogEntry.Builder()
+                            .packageName(lpparam.packageName)
+                            .functionName("Session." + methodName)
+                            .type(Constants.TYPE_OPEN_CHANNEL)
+                            .aid(aidHex)
+                            .selectResponse(selectResponse)
+                            .executionTimeMs(executionTime)
+                            .stackTrace(callStack)
+                            .build();
                         
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
@@ -70,10 +75,13 @@ public class SessionOpenChannelHook {
             // Hook version with byte[] aid and byte P2
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, byte.class, new XC_MethodHook() {
                 private long startTime;
+                private String callStack;
                 
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     startTime = System.currentTimeMillis();
+                    // Capture call stack from the hooked method context
+                    callStack = CallLogEntry.captureCallStack();
                 }
                 
                 @Override
@@ -88,13 +96,15 @@ public class SessionOpenChannelHook {
                         // Get select response from channel
                         String selectResponse = extractSelectResponse(channel);
                         
-                        CallLogEntry entry = CallLogEntry.createOpenChannelEntry(
-                            lpparam.packageName,
-                            "Session." + methodName + "(P2=0x" + String.format("%02X", p2) + ")",
-                            aidHex,
-                            selectResponse,
-                            executionTime
-                        );
+                        CallLogEntry entry = new CallLogEntry.Builder()
+                            .packageName(lpparam.packageName)
+                            .functionName("Session." + methodName + "(P2=0x" + String.format("%02X", p2) + ")")
+                            .type(Constants.TYPE_OPEN_CHANNEL)
+                            .aid(aidHex)
+                            .selectResponse(selectResponse)
+                            .executionTimeMs(executionTime)
+                            .stackTrace(callStack)
+                            .build();
                         
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {

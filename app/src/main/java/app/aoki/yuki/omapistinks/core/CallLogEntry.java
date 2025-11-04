@@ -9,6 +9,7 @@ import java.util.Locale;
  */
 public class CallLogEntry {
     private static final int MAX_STACK_FRAMES = 20;
+    private static final int STACK_FRAME_SKIP = 0; // Start from beginning for hooks
     
     private final String timestamp;
     private final String shortTimestamp;
@@ -44,6 +45,24 @@ public class CallLogEntry {
         this.executionTimeMs = builder.executionTimeMs;
         this.error = builder.error;
         this.stackTrace = builder.stackTrace;
+    }
+
+    /**
+     * Captures the current call stack as a formatted string
+     * Should be called from within the hooked method to capture meaningful call context
+     */
+    public static String captureCallStack() {
+        StringBuilder sb = new StringBuilder();
+        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+        
+        // Start from frame at STACK_FRAME_SKIP to show the actual caller context
+        int maxFrames = STACK_FRAME_SKIP + MAX_STACK_FRAMES;
+        for (int i = STACK_FRAME_SKIP; i < elements.length && i < maxFrames; i++) {
+            StackTraceElement element = elements[i];
+            sb.append("  at ").append(element.toString()).append("\n");
+        }
+        
+        return sb.toString();
     }
 
     /**
@@ -139,27 +158,6 @@ public class CallLogEntry {
             Date now = new Date();
             this.timestamp = dateFormat.format(now);
             this.shortTimestamp = shortFormat.format(now);
-            
-            // Capture call stack
-            this.stackTrace = captureStackTrace();
-        }
-        
-        /**
-         * Captures the current call stack as a formatted string
-         */
-        private String captureStackTrace() {
-            StringBuilder sb = new StringBuilder();
-            StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-            
-            // Skip the first few frames (getStackTrace, captureStackTrace, Builder constructor)
-            // Start from frame 4 to show the actual caller context
-            int maxFrames = 4 + MAX_STACK_FRAMES;
-            for (int i = 4; i < elements.length && i < maxFrames; i++) {
-                StackTraceElement element = elements[i];
-                sb.append("  at ").append(element.toString()).append("\n");
-            }
-            
-            return sb.toString();
         }
 
         public Builder packageName(String packageName) {
@@ -209,6 +207,11 @@ public class CallLogEntry {
 
         public Builder error(String error) {
             this.error = error;
+            return this;
+        }
+
+        public Builder stackTrace(String stackTrace) {
+            this.stackTrace = stackTrace;
             return this;
         }
 
