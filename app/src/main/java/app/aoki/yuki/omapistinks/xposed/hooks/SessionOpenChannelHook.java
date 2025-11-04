@@ -66,14 +66,15 @@ public class SessionOpenChannelHook {
                     } catch (Throwable t) {
                         // Log error if something went wrong
                         String callStack = (String) param.getObjectExtra("callStack");
-                        CallLogEntry errorEntry = new CallLogEntry.Builder()
+                        CallLogEntry.Builder errorBuilder = new CallLogEntry.Builder()
                             .packageName(lpparam.packageName)
                             .functionName("Session." + methodName)
                             .type(Constants.TYPE_OPEN_CHANNEL)
-                            .error("Error logging open channel: " + t.getMessage())
-                            .stackTrace(callStack)
-                            .build();
-                        broadcaster.logMessage(errorEntry);
+                            .error("Error logging open channel: " + t.getMessage());
+                        if (callStack != null) {
+                            errorBuilder.stackTrace(callStack);
+                        }
+                        broadcaster.logMessage(errorBuilder.build());
                     }
                 }
             });
@@ -120,14 +121,15 @@ public class SessionOpenChannelHook {
                     } catch (Throwable t) {
                         // Log error if something went wrong
                         String callStack = (String) param.getObjectExtra("callStack");
-                        CallLogEntry errorEntry = new CallLogEntry.Builder()
+                        CallLogEntry.Builder errorBuilder = new CallLogEntry.Builder()
                             .packageName(lpparam.packageName)
                             .functionName("Session." + methodName)
                             .type(Constants.TYPE_OPEN_CHANNEL)
-                            .error("Error logging open channel: " + t.getMessage())
-                            .stackTrace(callStack)
-                            .build();
-                        broadcaster.logMessage(errorEntry);
+                            .error("Error logging open channel: " + t.getMessage());
+                        if (callStack != null) {
+                            errorBuilder.stackTrace(callStack);
+                        }
+                        broadcaster.logMessage(errorBuilder.build());
                     }
                 }
             });

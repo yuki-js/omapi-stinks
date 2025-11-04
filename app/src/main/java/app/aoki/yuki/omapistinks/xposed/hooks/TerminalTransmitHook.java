@@ -57,14 +57,15 @@ public class TerminalTransmitHook {
                     } catch (Throwable t) {
                         // Log error if something went wrong
                         String callStack = (String) param.getObjectExtra("callStack");
-                        CallLogEntry errorEntry = new CallLogEntry.Builder()
+                        CallLogEntry.Builder errorBuilder = new CallLogEntry.Builder()
                             .packageName(lpparam.packageName)
                             .functionName("[SYSTEM] Terminal.transmit")
                             .type(Constants.TYPE_TRANSMIT)
-                            .error("Error logging transmit: " + t.getMessage())
-                            .stackTrace(callStack)
-                            .build();
-                        broadcaster.logMessage(errorEntry);
+                            .error("Error logging transmit: " + t.getMessage());
+                        if (callStack != null) {
+                            errorBuilder.stackTrace(callStack);
+                        }
+                        broadcaster.logMessage(errorBuilder.build());
                     }
                 }
             });
