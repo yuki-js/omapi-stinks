@@ -71,14 +71,27 @@ public class CallLogEntry {
     public static CallLogEntry createTransmitEntry(String packageName, String functionName,
                                                    String apduCommand, String apduResponse,
                                                    long executionTimeMs) {
-        return new Builder()
+        return createTransmitEntry(packageName, functionName, apduCommand, apduResponse, 
+                                   executionTimeMs, null);
+    }
+
+    /**
+     * Create a log entry for Channel.transmit calls with call stack
+     */
+    public static CallLogEntry createTransmitEntry(String packageName, String functionName,
+                                                   String apduCommand, String apduResponse,
+                                                   long executionTimeMs, String stackTrace) {
+        Builder builder = new Builder()
                 .packageName(packageName)
                 .functionName(functionName)
                 .type(Constants.TYPE_TRANSMIT)
                 .apduCommand(apduCommand)
                 .apduResponse(apduResponse)
-                .executionTimeMs(executionTimeMs)
-                .build();
+                .executionTimeMs(executionTimeMs);
+        if (stackTrace != null) {
+            builder.stackTrace(stackTrace);
+        }
+        return builder.build();
     }
 
     /**
@@ -87,14 +100,27 @@ public class CallLogEntry {
     public static CallLogEntry createOpenChannelEntry(String packageName, String functionName,
                                                       String aid, String selectResponse,
                                                       long executionTimeMs) {
-        return new Builder()
+        return createOpenChannelEntry(packageName, functionName, aid, selectResponse,
+                                      executionTimeMs, null);
+    }
+
+    /**
+     * Create a log entry for Session.openChannel calls with call stack
+     */
+    public static CallLogEntry createOpenChannelEntry(String packageName, String functionName,
+                                                      String aid, String selectResponse,
+                                                      long executionTimeMs, String stackTrace) {
+        Builder builder = new Builder()
                 .packageName(packageName)
                 .functionName(functionName)
                 .type(Constants.TYPE_OPEN_CHANNEL)
                 .aid(aid)
                 .selectResponse(selectResponse)
-                .executionTimeMs(executionTimeMs)
-                .build();
+                .executionTimeMs(executionTimeMs);
+        if (stackTrace != null) {
+            builder.stackTrace(stackTrace);
+        }
+        return builder.build();
     }
 
     /**
@@ -115,13 +141,24 @@ public class CallLogEntry {
      */
     public static CallLogEntry createErrorEntry(String packageName, String functionName,
                                                 String type, String error) {
-        return new Builder()
+        return createErrorEntry(packageName, functionName, type, error, null);
+    }
+
+    /**
+     * Create a log entry for errors with call stack
+     */
+    public static CallLogEntry createErrorEntry(String packageName, String functionName,
+                                                String type, String error, String stackTrace) {
+        Builder builder = new Builder()
                 .packageName(packageName)
                 .functionName(functionName)
                 .type(type)
                 .error(error)
-                .executionTimeMs(0)
-                .build();
+                .executionTimeMs(0);
+        if (stackTrace != null) {
+            builder.stackTrace(stackTrace);
+        }
+        return builder.build();
     }
 
     /**

@@ -43,29 +43,27 @@ public class TerminalTransmitHook {
                         String responseHex = response != null ? LogBroadcaster.bytesToHex(response) : null;
                         
                         // Create structured log entry with call stack
-                        CallLogEntry entry = new CallLogEntry.Builder()
-                            .packageName(lpparam.packageName)
-                            .functionName("[SYSTEM] Terminal.transmit")
-                            .type(Constants.TYPE_TRANSMIT)
-                            .apduCommand(commandHex)
-                            .apduResponse(responseHex)
-                            .executionTimeMs(executionTime)
-                            .stackTrace(callStack)
-                            .build();
+                        CallLogEntry entry = CallLogEntry.createTransmitEntry(
+                            lpparam.packageName,
+                            "[SYSTEM] Terminal.transmit",
+                            commandHex,
+                            responseHex,
+                            executionTime,
+                            callStack
+                        );
                         
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
                         // Log error if something went wrong
                         String callStack = (String) param.getObjectExtra("callStack");
-                        CallLogEntry.Builder errorBuilder = new CallLogEntry.Builder()
-                            .packageName(lpparam.packageName)
-                            .functionName("[SYSTEM] Terminal.transmit")
-                            .type(Constants.TYPE_TRANSMIT)
-                            .error("Error logging transmit: " + t.getMessage());
-                        if (callStack != null) {
-                            errorBuilder.stackTrace(callStack);
-                        }
-                        broadcaster.logMessage(errorBuilder.build());
+                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                            lpparam.packageName,
+                            "[SYSTEM] Terminal.transmit",
+                            Constants.TYPE_TRANSMIT,
+                            "Error logging transmit: " + t.getMessage(),
+                            callStack
+                        );
+                        broadcaster.logMessage(errorEntry);
                     }
                 }
             });

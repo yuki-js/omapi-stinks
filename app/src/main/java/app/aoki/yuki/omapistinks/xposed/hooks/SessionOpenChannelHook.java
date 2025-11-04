@@ -52,29 +52,27 @@ public class SessionOpenChannelHook {
                         // Get select response from channel
                         String selectResponse = extractSelectResponse(channel);
                         
-                        CallLogEntry entry = new CallLogEntry.Builder()
-                            .packageName(lpparam.packageName)
-                            .functionName("Session." + methodName)
-                            .type(Constants.TYPE_OPEN_CHANNEL)
-                            .aid(aidHex)
-                            .selectResponse(selectResponse)
-                            .executionTimeMs(executionTime)
-                            .stackTrace(callStack)
-                            .build();
+                        CallLogEntry entry = CallLogEntry.createOpenChannelEntry(
+                            lpparam.packageName,
+                            "Session." + methodName,
+                            aidHex,
+                            selectResponse,
+                            executionTime,
+                            callStack
+                        );
                         
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
                         // Log error if something went wrong
                         String callStack = (String) param.getObjectExtra("callStack");
-                        CallLogEntry.Builder errorBuilder = new CallLogEntry.Builder()
-                            .packageName(lpparam.packageName)
-                            .functionName("Session." + methodName)
-                            .type(Constants.TYPE_OPEN_CHANNEL)
-                            .error("Error logging open channel: " + t.getMessage());
-                        if (callStack != null) {
-                            errorBuilder.stackTrace(callStack);
-                        }
-                        broadcaster.logMessage(errorBuilder.build());
+                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                            lpparam.packageName,
+                            "Session." + methodName,
+                            Constants.TYPE_OPEN_CHANNEL,
+                            "Error logging open channel: " + t.getMessage(),
+                            callStack
+                        );
+                        broadcaster.logMessage(errorEntry);
                     }
                 }
             });
@@ -107,29 +105,27 @@ public class SessionOpenChannelHook {
                         // Get select response from channel
                         String selectResponse = extractSelectResponse(channel);
                         
-                        CallLogEntry entry = new CallLogEntry.Builder()
-                            .packageName(lpparam.packageName)
-                            .functionName("Session." + methodName + "(P2=0x" + String.format("%02X", p2) + ")")
-                            .type(Constants.TYPE_OPEN_CHANNEL)
-                            .aid(aidHex)
-                            .selectResponse(selectResponse)
-                            .executionTimeMs(executionTime)
-                            .stackTrace(callStack)
-                            .build();
+                        CallLogEntry entry = CallLogEntry.createOpenChannelEntry(
+                            lpparam.packageName,
+                            "Session." + methodName + "(P2=0x" + String.format("%02X", p2) + ")",
+                            aidHex,
+                            selectResponse,
+                            executionTime,
+                            callStack
+                        );
                         
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
                         // Log error if something went wrong
                         String callStack = (String) param.getObjectExtra("callStack");
-                        CallLogEntry.Builder errorBuilder = new CallLogEntry.Builder()
-                            .packageName(lpparam.packageName)
-                            .functionName("Session." + methodName)
-                            .type(Constants.TYPE_OPEN_CHANNEL)
-                            .error("Error logging open channel: " + t.getMessage());
-                        if (callStack != null) {
-                            errorBuilder.stackTrace(callStack);
-                        }
-                        broadcaster.logMessage(errorBuilder.build());
+                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                            lpparam.packageName,
+                            "Session." + methodName,
+                            Constants.TYPE_OPEN_CHANNEL,
+                            "Error logging open channel: " + t.getMessage(),
+                            callStack
+                        );
+                        broadcaster.logMessage(errorEntry);
                     }
                 }
             });
