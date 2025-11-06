@@ -11,6 +11,7 @@ public class Constants {
     // Intent extras for structured log data
     public static final String EXTRA_MESSAGE = "message"; // Legacy
     public static final String EXTRA_TIMESTAMP = "timestamp";
+    public static final String EXTRA_SHORT_TIMESTAMP = "shortTimestamp";
     public static final String EXTRA_PACKAGE = "packageName";
     public static final String EXTRA_FUNCTION = "functionName";
     public static final String EXTRA_TYPE = "type"; // "transmit", "open", "close", "other"
@@ -24,6 +25,7 @@ public class Constants {
     public static final String EXTRA_PROCESS_ID = "processId";
     public static final String EXTRA_EXECUTION_TIME_MS = "executionTimeMs";
     public static final String EXTRA_ERROR = "error";
+    public static final String EXTRA_STACKTRACE = "stackTrace";
     
     // Package name for intent targeting
     public static final String PACKAGE_NAME = "app.aoki.yuki.omapistinks";

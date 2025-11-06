@@ -1,6 +1,5 @@
 package app.aoki.yuki.omapistinks.xposed;
 
-import app.aoki.yuki.omapistinks.core.ApduInfo;
 import app.aoki.yuki.omapistinks.core.CallLogEntry;
 import app.aoki.yuki.omapistinks.core.Constants;
 
@@ -58,6 +57,7 @@ public class LogBroadcaster {
                 Intent intent = new Intent(Constants.BROADCAST_ACTION);
                 intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".core.LogReceiver");
                 intent.putExtra(Constants.EXTRA_TIMESTAMP, entry.getTimestamp());
+                intent.putExtra(Constants.EXTRA_SHORT_TIMESTAMP, entry.getShortTimestamp());
                 intent.putExtra(Constants.EXTRA_PACKAGE, entry.getPackageName());
                 intent.putExtra(Constants.EXTRA_FUNCTION, entry.getFunctionName());
                 intent.putExtra(Constants.EXTRA_TYPE, entry.getType());
@@ -75,6 +75,11 @@ public class LogBroadcaster {
                 intent.putExtra(Constants.EXTRA_PROCESS_ID, entry.getProcessId());
                 intent.putExtra(Constants.EXTRA_EXECUTION_TIME_MS, entry.getExecutionTimeMs());
                 intent.putExtra(Constants.EXTRA_ERROR, entry.getError());
+
+                if (entry.hasStackTrace()) {
+                    intent.putExtra(Constants.EXTRA_STACKTRACE, entry.getStackTraceElements());
+                }
+
                 intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
                 
                 ctx.sendBroadcast(intent);

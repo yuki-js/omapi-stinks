@@ -67,6 +67,8 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         intent.putExtra("threadName", entry.getThreadName());
         intent.putExtra("processId", entry.getProcessId());
         intent.putExtra("executionTimeMs", entry.getExecutionTimeMs());
+        intent.putExtra("stackTraceElements", entry.getStackTraceElements());
+        intent.putExtra(Constants.EXTRA_STACKTRACE, entry.getStackTraceElements());
         
         context.startActivity(intent);
     }

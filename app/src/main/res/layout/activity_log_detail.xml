@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -18,12 +19,14 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- ScrollView with single scroll (no nested scrolling) -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <LinearLayout
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -59,6 +62,7 @@
                         android:text="Time:"
                         android:textSize="14sp"
                         android:fontFamily="monospace"
+                        android:lineSpacingExtra="2dp"
                         android:layout_marginBottom="8dp" />
 
                     <TextView
@@ -67,6 +71,7 @@
                         android:layout_height="wrap_content"
                         android:text="Package:"
                         android:textSize="14sp"
+                        android:lineSpacingExtra="2dp"
                         android:layout_marginBottom="8dp" />
 
                     <TextView
@@ -76,6 +81,7 @@
                         android:text="Function:"
                         android:textSize="14sp"
                         android:textStyle="bold"
+                        android:lineSpacingExtra="2dp"
                         android:layout_marginBottom="8dp" />
 
                     <TextView
@@ -83,7 +89,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Type:"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="2dp" />
 
                 </LinearLayout>
 
@@ -139,7 +146,8 @@
                         android:text="Command:"
                         android:textSize="14sp"
                         android:fontFamily="monospace"
-                        android:textIsSelectable="true" />
+                        android:textIsSelectable="true"
+                        android:lineSpacingExtra="2dp" />
 
                 </LinearLayout>
 
@@ -195,7 +203,8 @@
                         android:text="Response:"
                         android:textSize="14sp"
                         android:fontFamily="monospace"
-                        android:textIsSelectable="true" />
+                        android:textIsSelectable="true"
+                        android:lineSpacingExtra="2dp" />
 
                 </LinearLayout>
 
@@ -251,7 +260,8 @@
                         android:text="AID:"
                         android:textSize="14sp"
                         android:fontFamily="monospace"
-                        android:textIsSelectable="true" />
+                        android:textIsSelectable="true"
+                        android:lineSpacingExtra="2dp" />
 
                 </LinearLayout>
 
@@ -307,7 +317,8 @@
                         android:text="Select Response:"
                         android:textSize="14sp"
                         android:fontFamily="monospace"
-                        android:textIsSelectable="true" />
+                        android:textIsSelectable="true"
+                        android:lineSpacingExtra="2dp" />
 
                 </LinearLayout>
 
@@ -344,11 +355,123 @@
                         android:text="Details:"
                         android:textSize="14sp"
                         android:fontFamily="monospace"
-                        android:textIsSelectable="true" />
+                        android:textIsSelectable="true"
+                        android:lineSpacingExtra="2dp" />
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Error Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Error"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorPrimary" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCopyError"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Copy"
+                            android:textSize="12sp"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:minWidth="64dp"
+                            android:minHeight="36dp" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/detailError"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Error:"
+                        android:textSize="14sp"
+                        android:fontFamily="monospace"
+                        android:textIsSelectable="true"
+                        android:lineSpacingExtra="2dp" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+
+            <!-- Call Stack (primary section) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardStackTrace"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Call Stack"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorPrimary" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCopyStack"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Copy"
+                            android:textSize="12sp"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:minWidth="64dp"
+                            android:minHeight="36dp" />
+
+                    </LinearLayout>
+
+                    <!-- Container for dynamic stack frame cards -->
+                    <LinearLayout
+                        android:id="@+id/stackTraceContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="4dp" />
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
 
         </LinearLayout>
 

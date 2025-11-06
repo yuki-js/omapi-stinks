@@ -13,6 +13,25 @@ import app.aoki.yuki.omapistinks.xposed.LogBroadcaster;
  */
 public class SessionOpenChannelHook {
     
+    // Map Channel instance to associated AID (hex). Use WeakHashMap to avoid leaks across GC.
+    private static final java.util.Map<Object, String> CHANNEL_AID_MAP = new java.util.WeakHashMap<>();
+    
+    public static void setAidForChannel(Object channel, String aidHex) {
+        if (channel != null && aidHex != null && !aidHex.isEmpty()) {
+            CHANNEL_AID_MAP.put(channel, aidHex);
+        }
+    }
+    
+    public static String getAidForChannel(Object channel) {
+        return channel != null ? CHANNEL_AID_MAP.get(channel) : null;
+    }
+    
+    public static void removeChannel(Object channel) {
+        if (channel != null) {
+            CHANNEL_AID_MAP.remove(channel);
+        }
+    }
+    
     public static void hookBasicChannel(LoadPackageParam lpparam, String className, LogBroadcaster broadcaster) {
         hookOpenChannel(lpparam, className, "openBasicChannel", broadcaster);
     }
@@ -41,6 +60,9 @@ public class SessionOpenChannelHook {
                         byte[] aid = (byte[]) param.args[0];
                         String aidHex = LogBroadcaster.bytesToHex(aid);
                         Object channel = param.getResult();
+                        
+                        // Map AID to Channel for future transmit lookups
+                        setAidForChannel(channel, aidHex);
                         
                         // Get select response from channel
                         String selectResponse = extractSelectResponse(channel);
@@ -84,6 +106,9 @@ public class SessionOpenChannelHook {
                         byte p2 = (byte) param.args[1];
                         String aidHex = LogBroadcaster.bytesToHex(aid);
                         Object channel = param.getResult();
+                        
+                        // Map AID to Channel for future transmit lookups
+                        setAidForChannel(channel, aidHex);
                         
                         // Get select response from channel
                         String selectResponse = extractSelectResponse(channel);

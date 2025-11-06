@@ -45,8 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private Runnable refreshRunnable;
     
     private static final int REFRESH_INTERVAL_MS = 1000;
-    private int logCount = 0;
-    
+
     // Filter state
     private String searchQuery = "";
     private String packageFilter = null;
@@ -346,8 +345,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void clearLogs() {
         CallLogger.getInstance().clearLogs();
-        logCount = 0;
-        
+
         // Reset filters
         searchQuery = "";
         packageFilter = null;

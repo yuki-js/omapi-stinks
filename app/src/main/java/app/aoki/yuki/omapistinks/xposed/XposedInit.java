@@ -99,6 +99,8 @@ public class XposedInit implements IXposedHookLoadPackage {
     private void hookOmapiPackage(LoadPackageParam lpparam, String packagePrefix) {
         // Hook Channel.transmit - captures APDU command and response
         ChannelTransmitHook.hook(lpparam, packagePrefix + ".Channel", broadcaster);
+        // Hook Channel.close - drop Channel->AID mapping on close
+        ChannelTransmitHook.hookClose(lpparam, packagePrefix + ".Channel", broadcaster);
         
         // Hook Session.openBasicChannel - captures AID and select response
         SessionOpenChannelHook.hookBasicChannel(lpparam, packagePrefix + ".Session", broadcaster);
