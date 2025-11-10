@@ -1,6 +1,7 @@
 package app.aoki.yuki.omapistinks.ui;
 
 import app.aoki.yuki.omapistinks.core.Constants;
+import app.aoki.yuki.omapistinks.core.ApduInfo;
 import app.aoki.yuki.omapistinks.R;
 
 import android.content.ClipData;
@@ -136,14 +137,16 @@ public class LogDetailActivity extends AppCompatActivity {
 
         // Show relevant cards based on type
         if (Constants.TYPE_TRANSMIT.equals(type)) {
+            ApduInfo apduInfo = new ApduInfo(apduCommand, apduResponse);
+
             if (apduCommand != null && !apduCommand.isEmpty()) {
                 cardApduCommand.setVisibility(View.VISIBLE);
-                apduCommandView.setText(apduCommand);
+                apduCommandView.setText(apduInfo.getFormattedCommand());
                 btnCopyCommand.setOnClickListener(v -> copyToClipboard("APDU Command", apduCommand));
             }
             if (apduResponse != null && !apduResponse.isEmpty()) {
                 cardApduResponse.setVisibility(View.VISIBLE);
-                apduResponseView.setText(apduResponse);
+                apduResponseView.setText(apduInfo.getFormattedResponse());
                 btnCopyResponse.setOnClickListener(v -> copyToClipboard("APDU Response", apduResponse));
             }
             // Show AID if available for transmit calls (Channel mapped via SessionOpenChannelHook)
