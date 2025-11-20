@@ -3,6 +3,7 @@ package app.aoki.yuki.omapistinks.core;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.util.Log;
 
 import java.util.Arrays;
@@ -40,7 +41,18 @@ public class LogReceiver extends BroadcastReceiver {
                     String error = intent.getStringExtra(Constants.EXTRA_ERROR);
                     String timestamp = intent.getStringExtra(Constants.EXTRA_TIMESTAMP);
                     String shortTimestamp = intent.getStringExtra(Constants.EXTRA_SHORT_TIMESTAMP);
-                    StackTraceElement[] stackTraceElements = intent.getSerializableExtra(Constants.EXTRA_STACKTRACE, StackTraceElement[].class);
+                    
+                    // Handle StackTraceElement extraction with API level compatibility
+                    StackTraceElement[] stackTraceElements = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        stackTraceElements = intent.getSerializableExtra(Constants.EXTRA_STACKTRACE, StackTraceElement[].class);
+                    } else {
+                        @SuppressWarnings("deprecation")
+                        java.io.Serializable serializable = intent.getSerializableExtra(Constants.EXTRA_STACKTRACE);
+                        if (serializable instanceof StackTraceElement[]) {
+                            stackTraceElements = (StackTraceElement[]) serializable;
+                        }
+                    }
                     Log.d(TAG, "stackTraceElements: " + Arrays.toString(stackTraceElements));
                     
                     Log.d(TAG, "Received structured log from " + packageName + ": " + function + " [TID:" + threadId + ", PID:" + processId + ", " + executionTimeMs + "ms]");

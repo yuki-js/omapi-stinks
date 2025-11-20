@@ -56,6 +56,7 @@ public class XposedInit implements IXposedHookLoadPackage {
                     "attach", Context.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    // Wrap in try/catch to ensure no exceptions propagate to hooked method
                     try {
                         appContext = (Context) param.args[0];
                         // No need to recreate broadcaster; provider reads appContext lazily
@@ -70,21 +71,26 @@ public class XposedInit implements IXposedHookLoadPackage {
                             broadcaster.logMessage(hookEntry);
                         }
                     } catch (Throwable t) {
-                        // Log error if something went wrong in the hook
-                        if (broadcaster != null) {
-                            CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
-                                lpparam.packageName,
-                                "Application.attach",
-                                Constants.TYPE_OTHER,
-                                "Error in attach hook: " + t.getMessage()
-                            );
-                            broadcaster.logMessage(errorEntry);
+                        // Absorb all exceptions
+                        try {
+                            if (broadcaster != null) {
+                                CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                                    lpparam.packageName,
+                                    "Application.attach",
+                                    Constants.TYPE_OTHER,
+                                    "Error in attach hook: " + t.getMessage()
+                                );
+                                broadcaster.logMessage(errorEntry);
+                            }
+                        } catch (Throwable ignored) {
+                            // If even error logging fails, silently ignore
                         }
                     }
                 }
             });
         } catch (Throwable t) {
             // Context hook failed, broadcaster will work without context (Xposed log only)
+            // Note: This error is logged to Xposed log only (not via broadcaster)
         }
     }
     

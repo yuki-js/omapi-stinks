@@ -11,16 +11,38 @@ import de.robv.android.xposed.XposedBridge;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Handles broadcasting structured log data to the UI app
  * Uses ContextProvider for lazy context resolution with fallback support
+ * 
+ * LOW_IMPACT_MODE: When enabled, minimizes logging verbosity to reduce detection
+ * and impact on hooked applications. Only essential data is logged.
  */
 public class LogBroadcaster {
     private static final String TAG = "OmapiStinks";
+    
+    /**
+     * LOW_IMPACT_MODE flag - when true:
+     * - Suppresses verbose XposedBridge.log output
+     * - Only includes minimal Intent extras (timestamp, package, function, type, executionTimeMs)
+     * - Does NOT include APDU command/response, stack traces, details/AID/selectResponse
+     * 
+     * Set to false for debugging to get full verbose logging.
+     */
+    private static final boolean LOW_IMPACT_MODE = true;
+    
     private final ContextProvider contextProvider;
     private final String packageName;
     private final SimpleDateFormat dateFormat;
+    
+    /**
+     * Single-threaded executor for non-blocking async broadcasts
+     * Ensures broadcasts don't block the hooked application thread
+     */
+    private static final ExecutorService broadcastExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Constructor using ContextProvider for lazy context resolution
@@ -36,58 +58,107 @@ public class LogBroadcaster {
     /**
      * Send a structured log entry via broadcast
      * Context is resolved lazily each time to handle cases where context becomes available later
+     * 
+     * All exceptions are fully absorbed to ensure the hooked application never receives errors.
+     * Broadcasting is performed asynchronously to avoid blocking the hooked thread.
      */
     public void logMessage(CallLogEntry entry) {
+        // Fully catch and absorb all Throwables so hooked app never receives exceptions
         try {
-            String logMsg = TAG + ": [" + packageName + "] " + entry.getFunctionName() + " (" + entry.getType() + ") [TID:" + entry.getThreadId() + ", PID:" + entry.getProcessId() + ", " + entry.getExecutionTimeMs() + "ms]";
-            if (entry.hasError()) {
-                logMsg += " ERROR: " + entry.getError();
+            // In LOW_IMPACT_MODE, suppress verbose XposedBridge.log output
+            if (!LOW_IMPACT_MODE) {
+                String logMsg = TAG + ": [" + packageName + "] " + entry.getFunctionName() + " (" + entry.getType() + ") [TID:" + entry.getThreadId() + ", PID:" + entry.getProcessId() + ", " + entry.getExecutionTimeMs() + "ms]";
+                if (entry.hasError()) {
+                    logMsg += " ERROR: " + entry.getError();
+                }
+                XposedBridge.log(logMsg);
             }
-            XposedBridge.log(logMsg);
             
             // Resolve context lazily each time we send
             Context ctx = null;
             try {
                 ctx = contextProvider.getContext();
             } catch (Throwable t) {
-                XposedBridge.log(TAG + ": Error obtaining context from ContextProvider: " + t);
+                // In LOW_IMPACT_MODE, suppress error logging
+                if (!LOW_IMPACT_MODE) {
+                    XposedBridge.log(TAG + ": Error obtaining context from ContextProvider: " + t);
+                }
             }
             
             if (ctx != null) {
-                Intent intent = new Intent(Constants.BROADCAST_ACTION);
-                intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".core.LogReceiver");
-                intent.putExtra(Constants.EXTRA_TIMESTAMP, entry.getTimestamp());
-                intent.putExtra(Constants.EXTRA_SHORT_TIMESTAMP, entry.getShortTimestamp());
-                intent.putExtra(Constants.EXTRA_PACKAGE, entry.getPackageName());
-                intent.putExtra(Constants.EXTRA_FUNCTION, entry.getFunctionName());
-                intent.putExtra(Constants.EXTRA_TYPE, entry.getType());
+                final Context finalCtx = ctx;
                 
-                if (entry.getApduInfo() != null) {
-                    intent.putExtra(Constants.EXTRA_APDU_COMMAND, entry.getApduInfo().getCommand());
-                    intent.putExtra(Constants.EXTRA_APDU_RESPONSE, entry.getApduInfo().getResponse());
-                }
-                
-                intent.putExtra(Constants.EXTRA_AID, entry.getAid());
-                intent.putExtra(Constants.EXTRA_SELECT_RESPONSE, entry.getSelectResponse());
-                intent.putExtra(Constants.EXTRA_DETAILS, entry.getDetails());
-                intent.putExtra(Constants.EXTRA_THREAD_ID, entry.getThreadId());
-                intent.putExtra(Constants.EXTRA_THREAD_NAME, entry.getThreadName());
-                intent.putExtra(Constants.EXTRA_PROCESS_ID, entry.getProcessId());
-                intent.putExtra(Constants.EXTRA_EXECUTION_TIME_MS, entry.getExecutionTimeMs());
-                intent.putExtra(Constants.EXTRA_ERROR, entry.getError());
+                // Perform broadcast asynchronously to avoid blocking hooked thread
+                broadcastExecutor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Intent intent = new Intent(Constants.BROADCAST_ACTION);
+                            intent.setClassName(Constants.PACKAGE_NAME, Constants.PACKAGE_NAME + ".core.LogReceiver");
+                            
+                            // Always include minimal essential data
+                            intent.putExtra(Constants.EXTRA_TIMESTAMP, entry.getTimestamp());
+                            intent.putExtra(Constants.EXTRA_SHORT_TIMESTAMP, entry.getShortTimestamp());
+                            intent.putExtra(Constants.EXTRA_PACKAGE, entry.getPackageName());
+                            intent.putExtra(Constants.EXTRA_FUNCTION, entry.getFunctionName());
+                            intent.putExtra(Constants.EXTRA_TYPE, entry.getType());
+                            intent.putExtra(Constants.EXTRA_EXECUTION_TIME_MS, entry.getExecutionTimeMs());
+                            
+                            // In LOW_IMPACT_MODE, only send minimal data
+                            // Do NOT include APDU command/response, stack traces, details/AID/selectResponse
+                            if (!LOW_IMPACT_MODE) {
+                                if (entry.getApduInfo() != null) {
+                                    intent.putExtra(Constants.EXTRA_APDU_COMMAND, entry.getApduInfo().getCommand());
+                                    intent.putExtra(Constants.EXTRA_APDU_RESPONSE, entry.getApduInfo().getResponse());
+                                }
+                                
+                                intent.putExtra(Constants.EXTRA_AID, entry.getAid());
+                                intent.putExtra(Constants.EXTRA_SELECT_RESPONSE, entry.getSelectResponse());
+                                intent.putExtra(Constants.EXTRA_DETAILS, entry.getDetails());
+                                intent.putExtra(Constants.EXTRA_THREAD_ID, entry.getThreadId());
+                                intent.putExtra(Constants.EXTRA_THREAD_NAME, entry.getThreadName());
+                                intent.putExtra(Constants.EXTRA_PROCESS_ID, entry.getProcessId());
+                                intent.putExtra(Constants.EXTRA_ERROR, entry.getError());
 
-                if (entry.hasStackTrace()) {
-                    intent.putExtra(Constants.EXTRA_STACKTRACE, entry.getStackTraceElements());
-                }
+                                if (entry.hasStackTrace()) {
+                                    intent.putExtra(Constants.EXTRA_STACKTRACE, entry.getStackTraceElements());
+                                }
+                            } else {
+                                // In LOW_IMPACT_MODE, only include error if present (essential for debugging)
+                                if (entry.hasError()) {
+                                    intent.putExtra(Constants.EXTRA_ERROR, entry.getError());
+                                }
+                            }
 
-                intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-                
-                ctx.sendBroadcast(intent);
+                            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                            
+                            finalCtx.sendBroadcast(intent);
+                        } catch (Throwable t) {
+                            // Absorb all exceptions in async broadcast thread
+                            // In LOW_IMPACT_MODE, suppress error logging
+                            if (!LOW_IMPACT_MODE) {
+                                XposedBridge.log(TAG + ": Error in async broadcast: " + t.getMessage());
+                            }
+                        }
+                    }
+                });
             } else {
-                XposedBridge.log(TAG + ": Context is null; skipping broadcast for " + entry.getFunctionName());
+                // Context is null - skip broadcast
+                // In LOW_IMPACT_MODE, suppress logging
+                if (!LOW_IMPACT_MODE) {
+                    XposedBridge.log(TAG + ": Context is null; skipping broadcast for " + entry.getFunctionName());
+                }
             }
         } catch (Throwable t) {
-            XposedBridge.log(TAG + ": Error broadcasting log: " + t.getMessage());
+            // Final catch-all: absorb ANY exception to protect hooked app
+            // In LOW_IMPACT_MODE, suppress error logging
+            if (!LOW_IMPACT_MODE) {
+                try {
+                    XposedBridge.log(TAG + ": Critical error in logMessage: " + t.getMessage());
+                } catch (Throwable ignored) {
+                    // If even logging fails, silently ignore
+                }
+            }
         }
     }
 
