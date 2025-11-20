@@ -16,6 +16,7 @@ This Xposed module hooks into OMAPI calls made by applications and system servic
   - `Terminal` (System) - System-level APDU transmission
 
 - **Low-Impact Mode**: Minimal footprint mode (enabled by default) for reduced detection
+  - **Stack trace filtering** - Hooks `getStackTrace()` to hide Xposed/module frames
   - Non-blocking async broadcasts
   - Thread-safe concurrent call handling
   - Complete exception safety
@@ -201,15 +202,26 @@ If manual broadcast works, check:
 The module operates in **Low-Impact Mode by default** to minimize detection:
 
 **What it does:**
+- ✅ **Stack trace filtering** - Hooks `Thread.getStackTrace()` and `Throwable.getStackTrace()` to filter out Xposed/module frames (primary anti-detection mechanism)
 - ✅ Non-blocking async broadcasts (zero impact on app performance)
 - ✅ Thread-safe ThreadLocal variables (handles concurrent OMAPI calls)
 - ✅ Complete exception safety (no exceptions escape to hooked apps)
 - ✅ Minimal data collection (only timestamp, package, function, type, execution time)
 - ✅ Suppressed verbose logging (no XposedBridge.log output)
 
+**Stack Trace Filtering (Key Feature):**
+When apps examine their own stack traces for tampering detection, they see filtered results:
+```java
+// Filters out these patterns:
+- de.robv.android.xposed.*
+- app.aoki.yuki.omapistinks.*
+- XposedBridge, XC_MethodHook
+- EdXposed, LSPosed
+```
+
 **Data NOT collected in Low-Impact Mode:**
 - ❌ APDU commands and responses
-- ❌ Stack traces
+- ❌ Stack traces (by our module)
 - ❌ AID and select response data
 - ❌ Thread/process details
 

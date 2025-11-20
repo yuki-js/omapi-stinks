@@ -8,11 +8,12 @@
 
 Low-Impact Mode implements several key strategies to minimize the module's detection surface:
 
-1. **Suppressed Verbose Logging**: No detailed XposedBridge.log output
-2. **Minimal Data Collection**: Only essential data points are transmitted
-3. **Non-Blocking Operation**: All broadcasts happen asynchronously
-4. **Exception Absorption**: All errors are silently handled
-5. **Thread Safety**: ThreadLocal variables prevent race conditions
+1. **Stack Trace Filtering**: Automatically filters Xposed/module frames from all stack traces
+2. **Suppressed Verbose Logging**: No detailed XposedBridge.log output
+3. **Minimal Data Collection**: Only essential data points are transmitted
+4. **Non-Blocking Operation**: All broadcasts happen asynchronously
+5. **Exception Absorption**: All errors are silently handled
+6. **Thread Safety**: ThreadLocal variables prevent race conditions
 
 ## Default Configuration
 
@@ -60,7 +61,43 @@ private static final boolean LOW_IMPACT_MODE = true;  // DEFAULT: Enabled
 
 ## Safety Features
 
-### 1. Non-Blocking Async Broadcasting
+### 1. Stack Trace Filtering (Anti-Detection)
+
+**The Fundamental Approach to Stealth**
+
+Instead of just avoiding collection of stack traces, the module **hooks the stack trace reading mechanism itself** to filter out suspicious frames:
+
+```java
+// StackTraceFilterHook filters these patterns:
+- de.robv.android.xposed
+- app.aoki.yuki.omapistinks
+- XposedBridge, XC_MethodHook
+- EdXposed, LSPosed
+```
+
+**Why this matters:**
+- Apps often examine their own stack traces to detect tampering/root
+- Payment apps (Google Pay, Samsung Pay) may check for suspicious frames
+- By hooking `Thread.getStackTrace()` and `Throwable.getStackTrace()`, our frames are invisible
+- This is more effective than just not collecting stack traces
+
+**Hooked methods:**
+- `Thread.getStackTrace()` - Returns filtered stack traces
+- `Throwable.getStackTrace()` - Returns filtered stack traces
+
+**Implementation:**
+```java
+// In XposedInit.java - installed FIRST before other hooks
+StackTraceFilterHook.installHooks(lpparam);
+```
+
+**Behavior:**
+- Suspicious frames are automatically removed from all stack trace queries
+- If all frames are filtered, keeps the deepest non-suspicious frame
+- Never returns empty stack traces (which itself would be suspicious)
+- Silent failure if filtering encounters errors
+
+### 2. Non-Blocking Async Broadcasting
 
 ```java
 private static final ExecutorService broadcastExecutor = 
@@ -206,7 +243,29 @@ if (ctx != null) {
 
 Low-Impact Mode specifically addresses these detection vectors:
 
-### 1. Verbose Logging
+### 1. Stack Trace Analysis (PRIMARY DEFENSE)
+**The Problem:**
+- Apps examine their own stack traces to detect Xposed/root presence
+- Payment apps check for suspicious frame patterns
+- Traditional approach: Just avoid collecting stack traces (insufficient)
+
+**Our Solution - Hook Stack Trace Reading:**
+```java
+// When app calls Thread.getStackTrace() or Throwable.getStackTrace()
+// Our hook filters out:
+✓ de.robv.android.xposed.*
+✓ app.aoki.yuki.omapistinks.*
+✓ XposedBridge, XC_MethodHook
+✓ EdXposed, LSPosed frames
+```
+
+**Why this is more effective:**
+- Apps never see our frames in their stack traces
+- Works even if app explicitly checks for tampering
+- More fundamental than just avoiding collection
+- Addresses root cause of stack trace detection
+
+### 2. Verbose Logging
 **Without LOW_IMPACT_MODE:**
 ```
 OmapiStinks: [com.example.app] Channel.transmit (transmit) [TID:123, PID:456, 5ms]
@@ -217,16 +276,16 @@ OmapiStinks: [com.example.app] Channel.transmit (transmit) [TID:123, PID:456, 5m
 (No output to XposedBridge.log)
 ```
 
-### 2. Stack Trace Collection
+### 3. Stack Trace Collection (Our Module)
 **Without LOW_IMPACT_MODE:**
 - Full stack traces captured on every OMAPI call
 - Apps can detect stack trace collection via CPU usage patterns
 
 **With LOW_IMPACT_MODE:**
-- No stack traces collected
+- No stack traces collected by our module
 - Minimal CPU overhead
 
-### 3. Broadcast Traffic
+### 4. Broadcast Traffic
 **Without LOW_IMPACT_MODE:**
 - Large intents with full APDU data
 - Can be detected via system monitoring

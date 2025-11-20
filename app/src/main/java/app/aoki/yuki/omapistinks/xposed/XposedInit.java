@@ -11,6 +11,7 @@ import app.aoki.yuki.omapistinks.core.CallLogEntry;
 import app.aoki.yuki.omapistinks.core.Constants;
 import app.aoki.yuki.omapistinks.xposed.hooks.ChannelTransmitHook;
 import app.aoki.yuki.omapistinks.xposed.hooks.SessionOpenChannelHook;
+import app.aoki.yuki.omapistinks.xposed.hooks.StackTraceFilterHook;
 import app.aoki.yuki.omapistinks.xposed.hooks.TerminalTransmitHook;
 
 /**
@@ -24,6 +25,10 @@ public class XposedInit implements IXposedHookLoadPackage {
 
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
+        // Install stack trace filtering hooks FIRST to prevent detection
+        // This filters out Xposed/module frames from stack traces that apps might examine
+        StackTraceFilterHook.installHooks(lpparam);
+        
         // Hook Application.attach to get context for broadcasting
         hookApplicationContext(lpparam);
         
