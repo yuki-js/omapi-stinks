@@ -1,41 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- LSPosed Scope: Recommended packages to hook for OMAPI monitoring
-         Note: The module will hook OMAPI calls in ANY app added to scope.
-         These are just recommended/essential packages for typical usage.
+         
+         CRITICAL: DO NOT add payment/banking apps with strict security to scope!
+         Adding payment apps (Google Pay, Rakuten Pay, etc.) can trigger root detection
+         and cause them to stop working.
          
          REQUIRED for functionality:
          - android (Android Framework - contains OMAPI implementation)
          - com.android.se (SecureElement system service)
          
-         Add any app you want to monitor to the scope list in LSPosed.
+         The module monitors OMAPI calls at the SYSTEM LEVEL, so you can see activity
+         from ALL apps without directly hooking them. Only hook specific apps if you
+         need detailed debugging and they don't have strict security checks.
+         
+         SAFE to add: SIM toolkit, system services, non-security-critical apps
+         UNSAFE to add: Payment apps, banking apps, apps with root detection
     -->
     <string-array name="xposed_scope">
         <!-- REQUIRED: Android Framework - Core OMAPI implementation -->
         <item>android</item>
         
-        <!-- REQUIRED: System SE Service -->
+        <!-- REQUIRED: System SE Service - This captures ALL OMAPI calls system-wide -->
         <item>com.android.se</item>
         
-        <!-- Optional: Common apps that use OMAPI -->
-        <!-- Google Services -->
-        <item>com.google.android.gms</item>
-        <item>com.google.android.gsf</item>
-        
-        <!-- Payment apps -->
-        <item>com.google.android.apps.walletnfcrel</item>
-        <item>com.samsung.android.spay</item>
-        
-        <!-- SIM Toolkit -->
+        <!-- SAFE: SIM Toolkit - No root detection -->
         <item>com.android.stk</item>
         
-        <!-- Felica (Japanese mobile payment/transit apps) -->
-        <item>com.felicanetworks.mfm.main</item>
-        <item>com.felicanetworks.mfc</item>
-        <item>com.felicanetworks.mfw.a.main</item>
-        <item>com.felicanetworks.mfw.a.boot</item>
-        <item>com.felicanetworks.mfs</item>
-        
-        <!-- Add any other apps you want to monitor here -->
+        <!-- Optional: Only add non-sensitive apps you want to debug here -->
+        <!-- WARNING: Do NOT add payment/banking apps to avoid root detection -->
     </string-array>
 </resources>

@@ -46,18 +46,27 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 ### 2. Configure LSPosed
 
+⚠️ **CRITICAL: Root Detection Warning** ⚠️
+
+**DO NOT add payment/banking apps to the scope!** Adding apps with strict security (Google Pay, Rakuten Pay, Samsung Pay, banking apps) will trigger root detection and cause them to stop working.
+
+**The module monitors OMAPI at the SYSTEM LEVEL**, so you can see activity from ALL apps without directly hooking them.
+
 1. Open **LSPosed Manager**
 2. Enable **"OMAPI Stinks"** module
-3. **Add to scope** (CRITICAL):
+3. **Add to scope** (MINIMAL SCOPE):
    - ✅ **android** (system framework - REQUIRED)
    - ✅ **com.android.se** (SecureElement service - REQUIRED)
-   - ✅ Your target apps (Google Pay, Samsung Pay, etc.)
+   - ✅ **com.android.stk** (SIM Toolkit - optional, safe)
+   - ❌ **NEVER add**: Payment apps, banking apps, or apps with root detection
 4. **Reboot device**
+
+**Why this works:** The `com.android.se` hook captures ALL APDU transmissions system-wide, regardless of which app initiated them. You'll see activity from payment apps without triggering their security checks.
 
 ### 3. Use It
 
 1. Launch "OMAPI Stinks" app
-2. Use an app that makes OMAPI calls (e.g., Google Pay, mobile banking)
+2. Use any app that makes OMAPI calls (payment apps will work normally now)
 3. Watch logs appear in real-time! 🎉
 
 ## How It Works
@@ -97,9 +106,11 @@ The module:
 **com.android.se.Terminal**
 - **`transmit(byte[] command)`** - ALL APDUs from ALL apps pass through here!
 
-## Supported Packages
+## Supported Packages & Scope Configuration
 
-**The module hooks OMAPI calls in ANY app you add to the LSPosed scope!**
+**IMPORTANT: Minimal Scope = Maximum Compatibility**
+
+The module hooks OMAPI calls at the **system service level** (`com.android.se`), which means it captures ALL OMAPI activity system-wide regardless of which app initiated it.
 
 The module automatically hooks these OMAPI packages wherever they exist:
 - `android.se.omapi.*` (Android 9+)
@@ -108,21 +119,29 @@ The module automatically hooks these OMAPI packages wherever they exist:
 ### Required Scope Entries
 These MUST be enabled for the module to work:
 - ✅ **`android`** (system framework - contains OMAPI implementation)
-- ✅ **`com.android.se`** (SecureElement service - handles APDU transmission)
+- ✅ **`com.android.se`** (SecureElement service - handles ALL APDU transmissions)
 
-### Optional Scope Suggestions
-Pre-configured recommendations for common OMAPI-using apps:
-- `com.google.android.gms` (Google Play Services)
-- `com.google.android.apps.walletnfcrel` (Google Wallet)
-- `com.samsung.android.spay` (Samsung Pay)
-- `com.android.stk` (SIM Toolkit)
-- `com.felicanetworks.mfm.main` (おサイフケータイ - Osaifu-Keitai)
-- `com.felicanetworks.mfc` (Mobile Felica Client)
-- `com.felicanetworks.mfw.a.main` (Mobile Felica Web Plugin)
-- `com.felicanetworks.mfw.a.boot` (Mobile Felica Web Boot)
-- `com.felicanetworks.mfs` (Mobile Felica Service)
+### Safe Optional Entries
+Only add these if you need detailed app-specific debugging:
+- ✅ **`com.android.stk`** (SIM Toolkit - no security issues)
+- ✅ **Other non-security-critical apps**
 
-**Add ANY app you want to monitor to the scope!** The module will hook OMAPI calls in any package.
+### ⚠️ NEVER Add to Scope ⚠️
+These apps have strict root detection and will BREAK if hooked:
+- ❌ **Payment apps**: Google Pay, Samsung Pay, Rakuten Pay, PayPay, etc.
+- ❌ **Banking apps**: Any app with SafetyNet/Play Integrity
+- ❌ **FeliCa apps**: おサイフケータイ and related services
+- ❌ **Google Play Services** (`com.google.android.gms`)
+
+**Why?** These apps will detect Xposed hooks and refuse to run. The system-level hook at `com.android.se` already captures their OMAPI activity without triggering their security checks.
+
+### Migration from Old Scope
+If you previously added payment apps to the scope:
+1. Open LSPosed Manager
+2. Go to OMAPI Stinks module
+3. Remove ALL apps EXCEPT `android` and `com.android.se`
+4. Reboot device
+5. Payment apps should now work normally while you still see their OMAPI logs!
 
 ## Verification & Troubleshooting
 

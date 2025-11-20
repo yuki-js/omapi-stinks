@@ -24,10 +24,11 @@
             android:parentActivityName=".ui.MainActivity" />
 
         <!-- Persistent BroadcastReceiver - captures logs even when app is closed -->
-        <!-- exported=true is required to receive broadcasts from other processes (Xposed hooks) -->
+        <!-- exported=false prevents external apps from detecting this receiver -->
+        <!-- Broadcasts use explicit targeting with FLAG_INCLUDE_STOPPED_PACKAGES to still work -->
         <receiver
             android:name=".core.LogReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="app.aoki.yuki.omapistinks.LOG_ENTRY" />
             </intent-filter>
