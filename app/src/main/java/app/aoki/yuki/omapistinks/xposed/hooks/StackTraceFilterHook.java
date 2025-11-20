@@ -15,8 +15,6 @@ import java.util.List;
  */
 public class StackTraceFilterHook {
     
-    private static final String TAG = "OmapiStinks.StackTraceFilter";
-    
     // Patterns to filter out from stack traces
     private static final String[] FILTER_PATTERNS = {
         "de.robv.android.xposed",
@@ -44,6 +42,7 @@ public class StackTraceFilterHook {
      * Hook Thread.getStackTrace() to filter out our frames
      */
     private static void hookThreadGetStackTrace(LoadPackageParam lpparam) {
+        // Note: lpparam is required by the API but not used here since we hook Thread class globally
         try {
             XposedHelpers.findAndHookMethod(Thread.class, "getStackTrace", new XC_MethodHook() {
                 @Override
@@ -68,6 +67,7 @@ public class StackTraceFilterHook {
      * Hook Throwable.getStackTrace() to filter out our frames
      */
     private static void hookThrowableGetStackTrace(LoadPackageParam lpparam) {
+        // Note: lpparam is required by the API but not used here since we hook Throwable class globally
         try {
             XposedHelpers.findAndHookMethod(Throwable.class, "getStackTrace", new XC_MethodHook() {
                 @Override
@@ -106,15 +106,14 @@ public class StackTraceFilterHook {
         // If we filtered everything, return at least one frame to avoid empty stack traces
         // which could itself be suspicious
         if (filtered.isEmpty() && original.length > 0) {
-            // Return the deepest non-filtered frame, or the last frame if all are filtered
+            // Return the deepest non-filtered frame using shouldFilter() for consistency
             for (int i = original.length - 1; i >= 0; i--) {
-                String className = original[i].getClassName();
-                if (!className.contains("Xposed") && !className.contains("omapistinks")) {
+                if (!shouldFilter(original[i])) {
                     filtered.add(original[i]);
                     break;
                 }
             }
-            // If still empty, add the last frame to prevent completely empty stack
+            // If still empty (all frames were filtered), add the last frame to prevent completely empty stack
             if (filtered.isEmpty()) {
                 filtered.add(original[original.length - 1]);
             }
