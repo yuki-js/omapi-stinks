@@ -43,8 +43,9 @@ public class LogReceiver extends BroadcastReceiver {
                     String shortTimestamp = intent.getStringExtra(Constants.EXTRA_SHORT_TIMESTAMP);
                     
                     // Handle StackTraceElement extraction with API level compatibility
+                    // getSerializableExtra(String, Class<T>) was introduced in Android 14 (API 34)
                     StackTraceElement[] stackTraceElements = null;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                         stackTraceElements = intent.getSerializableExtra(Constants.EXTRA_STACKTRACE, StackTraceElement[].class);
                     } else {
                         @SuppressWarnings("deprecation")
