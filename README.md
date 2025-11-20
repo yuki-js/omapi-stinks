@@ -15,6 +15,13 @@ This Xposed module hooks into OMAPI calls made by applications and system servic
   - `Channel` - APDU transmission (the critical part!)
   - `Terminal` (System) - System-level APDU transmission
 
+- **Low-Impact Mode**: Minimal footprint mode (enabled by default) for reduced detection
+  - Non-blocking async broadcasts
+  - Thread-safe concurrent call handling
+  - Complete exception safety
+  - Minimal data collection
+  - See [LOW_IMPACT_MODE.md](LOW_IMPACT_MODE.md) for details
+
 - **Real-Time Logging**: Logs appear instantly in the UI app via broadcast IPC
 
 - **Dual Package Support**: Hooks both legacy (`org.simalliance.openmobileapi`) and modern (`android.se.omapi`) OMAPI packages
@@ -188,6 +195,30 @@ If manual broadcast works, check:
 - **Broadcast IPC**: Cross-process communication via Android broadcasts
 - **In-memory logging**: Fast, no file I/O
 - **Material Design 3 UI**: Modern card-based interface
+
+### Low-Impact Mode
+
+The module operates in **Low-Impact Mode by default** to minimize detection:
+
+**What it does:**
+- ✅ Non-blocking async broadcasts (zero impact on app performance)
+- ✅ Thread-safe ThreadLocal variables (handles concurrent OMAPI calls)
+- ✅ Complete exception safety (no exceptions escape to hooked apps)
+- ✅ Minimal data collection (only timestamp, package, function, type, execution time)
+- ✅ Suppressed verbose logging (no XposedBridge.log output)
+
+**Data NOT collected in Low-Impact Mode:**
+- ❌ APDU commands and responses
+- ❌ Stack traces
+- ❌ AID and select response data
+- ❌ Thread/process details
+
+**To enable full debugging with all data:**
+1. Edit `app/src/main/java/app/aoki/yuki/omapistinks/xposed/LogBroadcaster.java`
+2. Change `LOW_IMPACT_MODE = false`
+3. Rebuild and reinstall
+
+See **[LOW_IMPACT_MODE.md](LOW_IMPACT_MODE.md)** for complete documentation.
 
 ### Why No File Logging?
 
