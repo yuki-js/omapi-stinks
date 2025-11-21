@@ -11,6 +11,7 @@ import app.aoki.yuki.omapistinks.core.CallLogEntry;
 import app.aoki.yuki.omapistinks.core.Constants;
 import app.aoki.yuki.omapistinks.xposed.hooks.ChannelTransmitHook;
 import app.aoki.yuki.omapistinks.xposed.hooks.SessionOpenChannelHook;
+import app.aoki.yuki.omapistinks.xposed.hooks.StackTraceFilterHook;
 import app.aoki.yuki.omapistinks.xposed.hooks.TerminalTransmitHook;
 
 /**
@@ -24,6 +25,10 @@ public class XposedInit implements IXposedHookLoadPackage {
 
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
+        // Install stack trace filtering hooks FIRST to prevent detection
+        // This filters out Xposed/module frames from stack traces that apps might examine
+        StackTraceFilterHook.installHooks(lpparam);
+        
         // Hook Application.attach to get context for broadcasting
         hookApplicationContext(lpparam);
         
@@ -56,6 +61,7 @@ public class XposedInit implements IXposedHookLoadPackage {
                     "attach", Context.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    // Wrap in try/catch to ensure no exceptions propagate to hooked method
                     try {
                         appContext = (Context) param.args[0];
                         // No need to recreate broadcaster; provider reads appContext lazily
@@ -70,21 +76,26 @@ public class XposedInit implements IXposedHookLoadPackage {
                             broadcaster.logMessage(hookEntry);
                         }
                     } catch (Throwable t) {
-                        // Log error if something went wrong in the hook
-                        if (broadcaster != null) {
-                            CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
-                                lpparam.packageName,
-                                "Application.attach",
-                                Constants.TYPE_OTHER,
-                                "Error in attach hook: " + t.getMessage()
-                            );
-                            broadcaster.logMessage(errorEntry);
+                        // Absorb all exceptions
+                        try {
+                            if (broadcaster != null) {
+                                CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                                    lpparam.packageName,
+                                    "Application.attach",
+                                    Constants.TYPE_OTHER,
+                                    "Error in attach hook: " + t.getMessage()
+                                );
+                                broadcaster.logMessage(errorEntry);
+                            }
+                        } catch (Throwable ignored) {
+                            // If even error logging fails, silently ignore
                         }
                     }
                 }
             });
         } catch (Throwable t) {
             // Context hook failed, broadcaster will work without context (Xposed log only)
+            // Note: This error is logged to Xposed log only (not via broadcaster)
         }
     }
     

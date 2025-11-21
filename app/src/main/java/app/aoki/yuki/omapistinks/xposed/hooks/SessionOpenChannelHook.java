@@ -10,11 +10,17 @@ import app.aoki.yuki.omapistinks.xposed.LogBroadcaster;
 
 /**
  * Hooks Session.openBasicChannel() and Session.openLogicalChannel() methods
+ * 
+ * Thread-safety: Uses ThreadLocal variables to avoid races across concurrent calls.
+ * Exception-safety: All exceptions are caught and never propagate to hooked methods.
  */
 public class SessionOpenChannelHook {
     
     // Map Channel instance to associated AID (hex). Use WeakHashMap to avoid leaks across GC.
     private static final java.util.Map<Object, String> CHANNEL_AID_MAP = new java.util.WeakHashMap<>();
+    
+    // ThreadLocal variable to store per-call start time (thread-safe for concurrent calls)
+    private static final ThreadLocal<Long> startTimeTL = new ThreadLocal<>();
     
     public static void setAidForChannel(Object channel, String aidHex) {
         if (channel != null && aidHex != null && !aidHex.isEmpty()) {
@@ -46,17 +52,26 @@ public class SessionOpenChannelHook {
             
             // Hook version with byte[] aid
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, new XC_MethodHook() {
-                private long startTime;
                 
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    startTime = System.currentTimeMillis();
+                    // Wrap in try/catch to ensure no exceptions propagate to hooked method
+                    try {
+                        startTimeTL.set(System.currentTimeMillis());
+                    } catch (Throwable t) {
+                        // Absorb all exceptions - hook should never interfere with app
+                    }
                 }
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    // Wrap in try/catch to ensure no exceptions propagate to hooked method
                     try {
-                        long executionTime = System.currentTimeMillis() - startTime;
+                        // Safely retrieve ThreadLocal value with default
+                        Long startTime = startTimeTL.get();
+                        long executionTime = (startTime != null) ? 
+                            (System.currentTimeMillis() - startTime) : 0;
+                        
                         byte[] aid = (byte[]) param.args[0];
                         String aidHex = LogBroadcaster.bytesToHex(aid);
                         Object channel = param.getResult();
@@ -77,31 +92,47 @@ public class SessionOpenChannelHook {
                         
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
-                        // Log error if something went wrong
-                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
-                            lpparam.packageName,
-                            "Session." + methodName,
-                            Constants.TYPE_OPEN_CHANNEL,
-                            "Error logging open channel: " + t.getMessage()
-                        );
-                        broadcaster.logMessage(errorEntry);
+                        // Absorb all exceptions
+                        try {
+                            CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                                lpparam.packageName,
+                                "Session." + methodName,
+                                Constants.TYPE_OPEN_CHANNEL,
+                                "Error logging open channel: " + t.getMessage()
+                            );
+                            broadcaster.logMessage(errorEntry);
+                        } catch (Throwable ignored) {
+                            // If even error logging fails, silently ignore
+                        }
+                    } finally {
+                        // Critical: Always clean up ThreadLocal to avoid leaks
+                        startTimeTL.remove();
                     }
                 }
             });
             
             // Hook version with byte[] aid and byte P2
             XposedHelpers.findAndHookMethod(clazz, methodName, byte[].class, byte.class, new XC_MethodHook() {
-                private long startTime;
                 
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    startTime = System.currentTimeMillis();
+                    // Wrap in try/catch to ensure no exceptions propagate to hooked method
+                    try {
+                        startTimeTL.set(System.currentTimeMillis());
+                    } catch (Throwable t) {
+                        // Absorb all exceptions - hook should never interfere with app
+                    }
                 }
                 
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    // Wrap in try/catch to ensure no exceptions propagate to hooked method
                     try {
-                        long executionTime = System.currentTimeMillis() - startTime;
+                        // Safely retrieve ThreadLocal value with default
+                        Long startTime = startTimeTL.get();
+                        long executionTime = (startTime != null) ? 
+                            (System.currentTimeMillis() - startTime) : 0;
+                        
                         byte[] aid = (byte[]) param.args[0];
                         byte p2 = (byte) param.args[1];
                         String aidHex = LogBroadcaster.bytesToHex(aid);
@@ -123,14 +154,21 @@ public class SessionOpenChannelHook {
                         
                         broadcaster.logMessage(entry);
                     } catch (Throwable t) {
-                        // Log error if something went wrong
-                        CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
-                            lpparam.packageName,
-                            "Session." + methodName,
-                            Constants.TYPE_OPEN_CHANNEL,
-                            "Error logging open channel: " + t.getMessage()
-                        );
-                        broadcaster.logMessage(errorEntry);
+                        // Absorb all exceptions
+                        try {
+                            CallLogEntry errorEntry = CallLogEntry.createErrorEntry(
+                                lpparam.packageName,
+                                "Session." + methodName,
+                                Constants.TYPE_OPEN_CHANNEL,
+                                "Error logging open channel: " + t.getMessage()
+                            );
+                            broadcaster.logMessage(errorEntry);
+                        } catch (Throwable ignored) {
+                            // If even error logging fails, silently ignore
+                        }
+                    } finally {
+                        // Critical: Always clean up ThreadLocal to avoid leaks
+                        startTimeTL.remove();
                     }
                 }
             });

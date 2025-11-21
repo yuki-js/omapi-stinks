@@ -15,6 +15,14 @@ This Xposed module hooks into OMAPI calls made by applications and system servic
   - `Channel` - APDU transmission (the critical part!)
   - `Terminal` (System) - System-level APDU transmission
 
+- **Low-Impact Mode**: Minimal footprint mode (enabled by default) for reduced detection
+  - **Stack trace filtering** - Hooks `getStackTrace()` to hide Xposed/module frames
+  - Non-blocking async broadcasts
+  - Thread-safe concurrent call handling
+  - Complete exception safety
+  - Minimal data collection
+  - See [LOW_IMPACT_MODE.md](LOW_IMPACT_MODE.md) for details
+
 - **Real-Time Logging**: Logs appear instantly in the UI app via broadcast IPC
 
 - **Dual Package Support**: Hooks both legacy (`org.simalliance.openmobileapi`) and modern (`android.se.omapi`) OMAPI packages
@@ -188,6 +196,43 @@ If manual broadcast works, check:
 - **Broadcast IPC**: Cross-process communication via Android broadcasts
 - **In-memory logging**: Fast, no file I/O
 - **Material Design 3 UI**: Modern card-based interface
+
+### Low-Impact Mode
+
+The module operates in **Low-Impact Mode by default** to minimize detection:
+
+**What it does:**
+- ✅ **Stack trace filtering** - Hooks `Thread.getStackTrace()` and `Throwable.getStackTrace()` to filter out Xposed/module frames (primary anti-detection mechanism)
+- ✅ Non-blocking async broadcasts (zero impact on app performance)
+- ✅ Thread-safe ThreadLocal variables (handles concurrent OMAPI calls)
+- ✅ Complete exception safety (no exceptions escape to hooked apps)
+- ✅ Minimal data collection (only timestamp, package, function, type, execution time)
+- ✅ Suppressed verbose logging (no XposedBridge.log output)
+
+**Stack Trace Filtering (Key Feature):**
+When apps examine their own stack traces for tampering detection, they see filtered results:
+```java
+// Filters out these patterns:
+- de.robv.android.xposed.*
+- app.aoki.yuki.omapistinks.*
+- XposedBridge, XC_MethodHook
+- EdXposed, LSPosed
+```
+
+**Data NOT collected in Low-Impact Mode:**
+- ❌ APDU commands and responses
+- ❌ Stack traces (by our module)
+- ❌ AID and select response data
+- ❌ Thread/process details
+
+**To toggle Low-Impact Mode:** ✨
+1. Open OMAPI Stinks app
+2. Tap ⋮ (More Options) → Settings → Low Impact Mode
+3. Check/uncheck to toggle
+4. Restart hooked apps to apply
+5. **Default: Disabled (full verbose logging)**
+
+See **[LOW_IMPACT_MODE.md](LOW_IMPACT_MODE.md)** for complete documentation.
 
 ### Why No File Logging?
 
