@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -107,6 +108,14 @@ public class MainActivity extends AppCompatActivity {
             fileLogItem.setVisible(false);
         }
         
+        // Set LOW_IMPACT_MODE checkbox state from SharedPreferences
+        MenuItem lowImpactModeItem = menu.findItem(R.id.action_low_impact_mode);
+        if (lowImpactModeItem != null) {
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+            boolean lowImpactMode = prefs.getBoolean(Constants.PREF_LOW_IMPACT_MODE, Constants.DEFAULT_LOW_IMPACT_MODE);
+            lowImpactModeItem.setChecked(lowImpactMode);
+        }
+        
         return true;
     }
 
@@ -123,12 +132,29 @@ public class MainActivity extends AppCompatActivity {
         } else if (id == R.id.action_export) {
             exportLogs();
             return true;
+        } else if (id == R.id.action_low_impact_mode) {
+            toggleLowImpactMode(item);
+            return true;
         } else if (id == R.id.action_help) {
             showHelp();
             return true;
         }
         
         return super.onOptionsItemSelected(item);
+    }
+    
+    private void toggleLowImpactMode(MenuItem item) {
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        boolean currentValue = prefs.getBoolean(Constants.PREF_LOW_IMPACT_MODE, Constants.DEFAULT_LOW_IMPACT_MODE);
+        boolean newValue = !currentValue;
+        
+        prefs.edit().putBoolean(Constants.PREF_LOW_IMPACT_MODE, newValue).apply();
+        item.setChecked(newValue);
+        
+        String message = newValue 
+            ? "Low Impact Mode enabled - minimal logging. Restart hooked apps to apply."
+            : "Low Impact Mode disabled - full verbose logging. Restart hooked apps to apply.";
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     private void refreshLogs() {

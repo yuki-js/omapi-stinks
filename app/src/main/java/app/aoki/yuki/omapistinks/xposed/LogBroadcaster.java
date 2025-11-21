@@ -5,6 +5,7 @@ import app.aoki.yuki.omapistinks.core.Constants;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 
 import de.robv.android.xposed.XposedBridge;
 
@@ -20,19 +21,12 @@ import java.util.concurrent.Executors;
  * 
  * LOW_IMPACT_MODE: When enabled, minimizes logging verbosity to reduce detection
  * and impact on hooked applications. Only essential data is logged.
+ * 
+ * The mode is configurable via SharedPreferences and can be changed from the UI.
+ * Default is false (full logging enabled).
  */
 public class LogBroadcaster {
     private static final String TAG = "OmapiStinks";
-    
-    /**
-     * LOW_IMPACT_MODE flag - when true:
-     * - Suppresses verbose XposedBridge.log output
-     * - Only includes minimal Intent extras (timestamp, package, function, type, executionTimeMs)
-     * - Does NOT include APDU command/response, stack traces, details/AID/selectResponse
-     * 
-     * Set to false for debugging to get full verbose logging.
-     */
-    private static final boolean LOW_IMPACT_MODE = true;
     
     private final ContextProvider contextProvider;
     private final String packageName;
@@ -54,6 +48,25 @@ public class LogBroadcaster {
         this.packageName = packageName;
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
     }
+    
+    /**
+     * Check if LOW_IMPACT_MODE is enabled from SharedPreferences
+     * Falls back to default if preferences cannot be read
+     */
+    private boolean isLowImpactMode(Context ctx) {
+        if (ctx == null) {
+            return Constants.DEFAULT_LOW_IMPACT_MODE;
+        }
+        try {
+            SharedPreferences prefs = ctx.createPackageContext(
+                Constants.PACKAGE_NAME, Context.CONTEXT_IGNORE_SECURITY
+            ).getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+            return prefs.getBoolean(Constants.PREF_LOW_IMPACT_MODE, Constants.DEFAULT_LOW_IMPACT_MODE);
+        } catch (Throwable t) {
+            // If we can't read preferences, use default
+            return Constants.DEFAULT_LOW_IMPACT_MODE;
+        }
+    }
 
     /**
      * Send a structured log entry via broadcast
@@ -65,24 +78,24 @@ public class LogBroadcaster {
     public void logMessage(CallLogEntry entry) {
         // Fully catch and absorb all Throwables so hooked app never receives exceptions
         try {
-            // In LOW_IMPACT_MODE, suppress verbose XposedBridge.log output
-            if (!LOW_IMPACT_MODE) {
-                String logMsg = TAG + ": [" + packageName + "] " + entry.getFunctionName() + " (" + entry.getType() + ") [TID:" + entry.getThreadId() + ", PID:" + entry.getProcessId() + ", " + entry.getExecutionTimeMs() + "ms]";
-                if (entry.hasError()) {
-                    logMsg += " ERROR: " + entry.getError();
-                }
-                XposedBridge.log(logMsg);
-            }
-            
             // Resolve context lazily each time we send
             Context ctx = null;
             try {
                 ctx = contextProvider.getContext();
             } catch (Throwable t) {
-                // In LOW_IMPACT_MODE, suppress error logging
-                if (!LOW_IMPACT_MODE) {
-                    XposedBridge.log(TAG + ": Error obtaining context from ContextProvider: " + t);
+                // Suppress error - context not available yet
+            }
+            
+            // Check LOW_IMPACT_MODE setting
+            final boolean lowImpactMode = isLowImpactMode(ctx);
+            
+            // In LOW_IMPACT_MODE, suppress verbose XposedBridge.log output
+            if (!lowImpactMode) {
+                String logMsg = TAG + ": [" + packageName + "] " + entry.getFunctionName() + " (" + entry.getType() + ") [TID:" + entry.getThreadId() + ", PID:" + entry.getProcessId() + ", " + entry.getExecutionTimeMs() + "ms]";
+                if (entry.hasError()) {
+                    logMsg += " ERROR: " + entry.getError();
                 }
+                XposedBridge.log(logMsg);
             }
             
             if (ctx != null) {
@@ -106,7 +119,7 @@ public class LogBroadcaster {
                             
                             // In LOW_IMPACT_MODE, only send minimal data
                             // Do NOT include APDU command/response, stack traces, details/AID/selectResponse
-                            if (!LOW_IMPACT_MODE) {
+                            if (!lowImpactMode) {
                                 if (entry.getApduInfo() != null) {
                                     intent.putExtra(Constants.EXTRA_APDU_COMMAND, entry.getApduInfo().getCommand());
                                     intent.putExtra(Constants.EXTRA_APDU_RESPONSE, entry.getApduInfo().getResponse());
@@ -136,7 +149,7 @@ public class LogBroadcaster {
                         } catch (Throwable t) {
                             // Absorb all exceptions in async broadcast thread
                             // In LOW_IMPACT_MODE, suppress error logging
-                            if (!LOW_IMPACT_MODE) {
+                            if (!lowImpactMode) {
                                 XposedBridge.log(TAG + ": Error in async broadcast: " + t.getMessage());
                             }
                         }
@@ -145,20 +158,14 @@ public class LogBroadcaster {
             } else {
                 // Context is null - skip broadcast
                 // In LOW_IMPACT_MODE, suppress logging
-                if (!LOW_IMPACT_MODE) {
+                if (!lowImpactMode) {
                     XposedBridge.log(TAG + ": Context is null; skipping broadcast for " + entry.getFunctionName());
                 }
             }
         } catch (Throwable t) {
             // Final catch-all: absorb ANY exception to protect hooked app
-            // In LOW_IMPACT_MODE, suppress error logging
-            if (!LOW_IMPACT_MODE) {
-                try {
-                    XposedBridge.log(TAG + ": Critical error in logMessage: " + t.getMessage());
-                } catch (Throwable ignored) {
-                    // If even logging fails, silently ignore
-                }
-            }
+            // We can't check lowImpactMode here since we may not have context
+            // Just silently ignore to be safe
         }
     }
 

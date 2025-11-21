@@ -36,6 +36,11 @@ public class Constants {
     public static final String TYPE_CLOSE = "close";
     public static final String TYPE_OTHER = "other";
     
+    // SharedPreferences
+    public static final String PREFS_NAME = "omapi_stinks_prefs";
+    public static final String PREF_LOW_IMPACT_MODE = "low_impact_mode";
+    public static final boolean DEFAULT_LOW_IMPACT_MODE = false;  // Default is false per user request
+    
     private Constants() {
         // Prevent instantiation
     }

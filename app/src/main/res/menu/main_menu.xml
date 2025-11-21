@@ -15,6 +15,18 @@
         app:showAsAction="ifRoom" />
     
     <item
+        android:id="@+id/action_settings"
+        android:title="@string/action_settings"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_low_impact_mode"
+                android:title="@string/action_low_impact_mode"
+                android:checkable="true" />
+        </menu>
+    </item>
+    
+    <item
         android:id="@+id/action_export"
         android:title="@string/action_export"
         app:showAsAction="never" />
