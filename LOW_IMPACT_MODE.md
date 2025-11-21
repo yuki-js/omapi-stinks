@@ -17,10 +17,24 @@ Low-Impact Mode implements several key strategies to minimize the module's detec
 
 ## Default Configuration
 
+**NEW: UI Configurable** ✨
+
+Low-Impact Mode can now be configured from the UI:
+
+1. Open OMAPI Stinks app
+2. Tap ⋮ (More Options) menu
+3. Go to **Settings** → **Low Impact Mode**
+4. Check/uncheck to toggle
+5. Restart hooked apps to apply
+
+**Default Setting:** `false` (Full verbose logging enabled)
+
 ```java
-// In LogBroadcaster.java
-private static final boolean LOW_IMPACT_MODE = true;  // DEFAULT: Enabled
+// In Constants.java
+public static final boolean DEFAULT_LOW_IMPACT_MODE = false;  // DEFAULT: Disabled
 ```
+
+The setting persists across app restarts via SharedPreferences and is read when hooks initialize.
 
 ## Impact on Data Collection
 
@@ -179,12 +193,39 @@ if (ctx != null) {
 
 ## Toggling Low-Impact Mode
 
-### Enabling Debug Mode (Full Logging)
+### From UI (Recommended) ✨
 
-1. Open: `app/src/main/java/app/aoki/yuki/omapistinks/xposed/LogBroadcaster.java`
-2. Change line 27:
+**NEW: Easy configuration without rebuilding**
+
+1. Open **OMAPI Stinks** app
+2. Tap the **⋮** (More Options) button in the toolbar
+3. Select **Settings** → **Low Impact Mode**
+4. Check/uncheck the checkbox to toggle
+5. **Restart hooked apps** to apply the change
+
+**Benefits:**
+- No rebuild required
+- Instant toggle
+- Setting persists across app restarts
+- User-friendly interface
+
+**Menu Structure:**
+```
+⋮ (More Options)
+├─ ⚙️ Settings
+│  └─ ☐ Low Impact Mode  ← Toggle here
+├─ 📤 Export
+└─ ❓ Help
+```
+
+### Via Code (Advanced)
+
+If you need compile-time configuration:
+
+1. Edit `app/src/main/java/app/aoki/yuki/omapistinks/core/Constants.java`
+2. Change:
    ```java
-   private static final boolean LOW_IMPACT_MODE = false;
+   public static final boolean DEFAULT_LOW_IMPACT_MODE = false;  // or true
    ```
 3. Rebuild the module:
    ```bash

@@ -225,10 +225,12 @@ When apps examine their own stack traces for tampering detection, they see filte
 - ❌ AID and select response data
 - ❌ Thread/process details
 
-**To enable full debugging with all data:**
-1. Edit `app/src/main/java/app/aoki/yuki/omapistinks/xposed/LogBroadcaster.java`
-2. Change `LOW_IMPACT_MODE = false`
-3. Rebuild and reinstall
+**To toggle Low-Impact Mode:** ✨
+1. Open OMAPI Stinks app
+2. Tap ⋮ (More Options) → Settings → Low Impact Mode
+3. Check/uncheck to toggle
+4. Restart hooked apps to apply
+5. **Default: Disabled (full verbose logging)**
 
 See **[LOW_IMPACT_MODE.md](LOW_IMPACT_MODE.md)** for complete documentation.
 
